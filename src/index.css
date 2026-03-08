@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #6467f2;
+  --color-background-dark: #101122;
+  --color-atmosphere: #1E293B;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-serif: "Source Serif Pro", serif;
+}
+
+@layer utilities {
+  .nebula-gradient {
+    background: radial-gradient(circle at 50% 50%, rgba(100, 103, 242, 0.15) 0%, rgba(16, 17, 34, 0) 70%);
+  }
+  .stars-bg {
+    background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                      radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                      radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
+    background-size: 550px 550px, 350px 350px, 250px 250px;
+  }
+}
