@@ -2,7 +2,7 @@ export type Screen = 'landing' | 'question' | 'synthesis';
 
 export type QuestionStatus = 'open' | 'synthesizing' | 'complete';
 export type VerificationMode = 'demo' | 'world-id';
-export type StorageNetwork = 'storacha' | 'local-ipfs';
+export type StorageNetwork = 'storacha' | 'filecoin' | 'local-ipfs';
 export type ReasoningType =
   | 'empirical evidence'
   | 'historical precedent'
@@ -108,4 +108,22 @@ export interface NoosphereState {
   submissions: ReasoningSubmission[];
   syntheses: SynthesisOutput[];
   verifications: VerificationRecord[];
+}
+
+export interface IntegrationStatus {
+  ok: boolean;
+  label: string;
+  detail: string;
+}
+
+export interface BackendStatus {
+  storacha: IntegrationStatus;
+  impulse: IntegrationStatus;
+  openai: IntegrationStatus;
+  filecoin: IntegrationStatus;
+}
+
+export interface StorageStatusSummary extends IntegrationStatus {
+  network: StorageNetwork;
+  configured: boolean;
 }

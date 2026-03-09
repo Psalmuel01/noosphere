@@ -75,6 +75,8 @@ const emptySubmissionForm: SubmissionFormState = {
   confidence: 7,
 };
 
+const shellWidthClass = 'mx-auto w-full max-w-[1680px]';
+
 function formatRelativeDeadline(deadline: string) {
   const delta = new Date(deadline).getTime() - Date.now();
   const hours = Math.round(Math.abs(delta) / (1000 * 60 * 60));
@@ -187,7 +189,7 @@ function QuestionCard({
             <p className="text-lg font-bold text-slate-100">{submissionCount}</p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-            <p className="mb-1 uppercase tracking-[0.2em] text-slate-500">Signal</p>
+            <p className="mb-1 uppercase tracking-[0.2em] text-slate-500">Persuasion</p>
             <p className="text-lg font-bold text-slate-100">{Math.round(avgQuality * 100)}%</p>
           </div>
         </div>
@@ -203,6 +205,7 @@ function QuestionCard({
 export default function App() {
   const {
     state,
+    backendStatus,
     storageStatus,
     isSynthesizing,
     createQuestion,
@@ -386,9 +389,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background-dark font-display text-slate-100">
+    <div className="flex min-h-screen flex-col bg-background-dark font-display text-slate-100">
       <header className="sticky top-0 z-50 border-b border-primary/10 bg-background-dark/85 px-6 py-4 backdrop-blur-md md:px-12">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
+        <div className={`${shellWidthClass} flex items-center justify-between gap-6`}>
           <button
             onClick={() => startTransition(() => setScreen('landing'))}
             className="flex items-center gap-3 text-primary"
@@ -421,7 +424,7 @@ export default function App() {
         </div>
       </header>
 
-      <main>
+      <main className="flex-1">
         <AnimatePresence mode="wait">
           {screen === 'landing' && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -429,7 +432,7 @@ export default function App() {
                 <HeroCanvas />
                 <div className="absolute inset-0 stars-bg opacity-30" />
                 <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 nebula-gradient" />
-                <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className={`relative ${shellWidthClass} grid gap-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(380px,0.75fr)]`}>
                   <div className="space-y-8">
                     <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font- uppercase tracking-[0.25em] text-primary">
                       <span className="relative flex h-2 w-2">
@@ -491,6 +494,29 @@ export default function App() {
                       <p className="mt-3 text-sm leading-relaxed text-slate-400">
                         {storageStatus.detail}
                       </p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {[backendStatus.impulse, backendStatus.openai, backendStatus.filecoin].map(
+                        (status) => (
+                          <div
+                            key={status.label}
+                            className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5"
+                          >
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${
+                                status.ok
+                                  ? 'bg-teal-500/10 text-teal-400'
+                                  : 'bg-amber-500/10 text-amber-400'
+                              }`}
+                            >
+                              {status.label}
+                            </span>
+                            <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                              {status.detail}
+                            </p>
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
 
@@ -572,7 +598,7 @@ export default function App() {
                 </div>
               </section>
 
-              <section className="mx-auto max-w-7xl px-6 pb-20 md:px-12">
+              <section className={`${shellWidthClass} px-6 pb-20 md:px-12`}>
                 <div className="mb-10 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">
@@ -601,7 +627,7 @@ export default function App() {
                     ))}
                   </div>
                 </div>
-                <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
                   {visibleQuestions.map((question) => {
                     const metrics = deriveQuestionMetrics(
                       question,
@@ -638,10 +664,10 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex h-[calc(100vh-81px)] flex-col"
+              className="flex min-h-0 flex-1 flex-col"
             >
               <div className="border-b border-slate-800 bg-background-dark/80 px-6 py-4 md:px-10">
-                <div className="mx-auto flex max-w-[1600px] flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className={`${shellWidthClass} flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between`}>
                   <div className="flex items-start gap-4">
                     <button
                       onClick={() => startTransition(() => setScreen('landing'))}
@@ -696,8 +722,9 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="mx-auto grid h-full max-w-[1600px] flex-1 gap-0 xl:grid-cols-[340px_minmax(0,1fr)_360px]">
-                <aside className="border-r border-slate-800 bg-background-dark/60 p-6">
+              <div className="px-6 py-10 pb-8 md:px-20">
+                <div className={`${shellWidthClass} grid min-h-0 flex-1 gap-10 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`}>
+                  <aside className="rounded-3xl border border-slate-800 bg-background-dark/60 p-6 xl:p-8">
                   <div className="mb-6">
                     <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
                       Submit Your Reasoning
@@ -915,42 +942,7 @@ export default function App() {
                     </div>
                   </div>
                 </aside>
-
-                <section className="relative min-h-0 border-r border-slate-800 bg-background-dark px-4 py-4">
-                  <Suspense fallback={<GraphFallback />}>
-                    <ReasoningGraph
-                      submissions={activeMetrics.submissions}
-                      selectedSubmissionId={activeSubmission?.id ?? null}
-                      onSelectSubmission={setSelectedSubmissionId}
-                    />
-                  </Suspense>
-                  <div className="pointer-events-none absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-6 rounded-full border border-slate-800 bg-slate-950/85 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 shadow-xl">
-                    <span className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-primary" />
-                      Consensus cluster
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-teal-400" />
-                      Adjacent reasoning
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-amber-400" />
-                      Dissent cluster
-                    </span>
-                  </div>
-                  <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-                    {[Plus, Minus, Focus].map((Icon, index) => (
-                      <button
-                        key={index}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-950/90 text-slate-400 shadow-sm transition hover:border-primary hover:text-primary"
-                      >
-                        <Icon className="h-4 w-4" />
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <aside className="bg-background-dark/60 p-6">
+                  <aside className="rounded-3xl border border-slate-800 bg-background-dark/60 p-6 xl:p-8">
                   <div className="mb-6 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
@@ -975,7 +967,7 @@ export default function App() {
                             </p>
                           </div>
                           <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                            {Math.round(activeSubmission.qualityScore * 100)}% quality
+                            {Math.round(activeSubmission.qualityScore * 100)}% persuasion
                           </div>
                         </div>
                         {activeSubmission.reasoningTypes.length > 0 && (
@@ -1114,7 +1106,42 @@ export default function App() {
                       No reasoning node selected yet.
                     </div>
                   )}
-                </aside>
+                  </aside>
+                </div>
+
+                <section className={`${shellWidthClass} relative mt-6 min-h-[520px] overflow-hidden rounded-3xl border border-slate-800 bg-background-dark px-4 py-4 md:px-6 md:py-6`}>
+                  <Suspense fallback={<GraphFallback />}>
+                    <ReasoningGraph
+                      submissions={activeMetrics.submissions}
+                      selectedSubmissionId={activeSubmission?.id ?? null}
+                      onSelectSubmission={setSelectedSubmissionId}
+                    />
+                  </Suspense>
+                  <div className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 items-center gap-6 rounded-full border border-slate-800 bg-slate-950/85 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 shadow-xl xl:flex">
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-primary" />
+                      Consensus cluster
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-teal-400" />
+                      Adjacent reasoning
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-amber-400" />
+                      Dissent cluster
+                    </span>
+                  </div>
+                  <div className="absolute bottom-6 right-6 flex flex-col gap-2">
+                    {[Plus, Minus, Focus].map((Icon, index) => (
+                      <button
+                        key={index}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-950/90 text-slate-400 shadow-sm transition hover:border-primary hover:text-primary"
+                      >
+                        <Icon className="h-4 w-4" />
+                      </button>
+                    ))}
+                  </div>
+                </section>
               </div>
             </motion.div>
           )}
@@ -1125,7 +1152,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="mx-auto max-w-6xl px-6 py-10 md:px-12"
+              className={`${shellWidthClass} px-6 py-10 md:px-12`}
             >
               <div className="mb-10 flex flex-col gap-4 border-b border-slate-800 pb-8 md:flex-row md:items-end md:justify-between">
                 <div className="space-y-3">
@@ -1311,7 +1338,7 @@ export default function App() {
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        ['Average quality', `${Math.round(activeMetrics.avgQuality * 100)}%`],
+                        ['Average persuasion', `${Math.round(activeMetrics.avgQuality * 100)}%`],
                         ['Submission count', `${activeMetrics.submissions.length}`],
                         ['Verified humans', `${activeMetrics.verifiedHumans}`],
                         ['Generated', new Date(activeMetrics.synthesis.generatedAt).toLocaleString()],
@@ -1347,19 +1374,19 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer class="bg-background-dark border-t border-slate-800 py-12 px-6">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div class="flex items-center gap-3 text-primary opacity-70 grayscale hover:grayscale-0 transition-all">
+      <footer className="mt-auto border-t border-slate-800 bg-background-dark px-6 py-12">
+        <div className={`${shellWidthClass} flex flex-col items-center justify-between gap-8 md:flex-row`}>
+          <div className="flex items-center gap-3 text-primary opacity-70 grayscale transition-all hover:grayscale-0">
             <Box className="h-8 w-8" />
-            <h2 class="text-slate-100 text-lg font-bold">Noosphere</h2>
+            <h2 className="text-lg font-bold text-slate-100">Noosphere</h2>
           </div>
-          <div class="flex gap-8 text-sm text-slate-500">
-            <a class="hover:text-primary" href="#">Docs</a>
-            <a class="hover:text-primary" href="#">Github</a>
-            <a class="hover:text-primary" href="#">Twitter</a>
-            <a class="hover:text-primary" href="#">Discord</a>
+          <div className="flex flex-wrap justify-center gap-8 text-sm text-slate-500">
+            <a className="hover:text-primary" href="#">Docs</a>
+            <a className="hover:text-primary" href="#">Github</a>
+            <a className="hover:text-primary" href="#">Twitter</a>
+            <a className="hover:text-primary" href="#">Discord</a>
           </div>
-          <p class="text-slate-600 text-xs">
+          <p className="text-xs text-slate-600">
             © 2026 Noosphere Collective Intelligence. Built for the future of thought.
           </p>
         </div>

@@ -1,100 +1,227 @@
-import { useEffect, useRef, useState } from 'react';
-import { seedState } from '../data/seed';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createHexDigest } from '../lib/cid';
-import { extractKeywords, keywordSimilarity, scoreReasoning } from '../lib/scoring';
+import { extractKeywords } from '../lib/scoring';
 import {
-  getStorageStatus,
-  uploadHotReasoningSubmission,
-  uploadSessionArchive,
-} from '../lib/storage';
-import { synthesizeQuestion } from '../lib/synthesis';
-import {
+  BackendStatus,
   NoosphereState,
   Question,
   QuestionDraft,
   ReasoningSubmission,
+  StorageStatusSummary,
   SubmissionDraft,
   SynthesisOutput,
   VerificationDraft,
   VerificationRecord,
 } from '../types';
 
-const STORAGE_KEY = 'noosphere-state-v1';
+type ApiQuestion = {
+  id: string;
+  title: string;
+  description: string;
+  creator: string;
+  createdAt: string;
+  deadline: string;
+  status: 'open' | 'closed' | 'synthesized';
+  tags: string[];
+};
 
-function cloneSeedState(): NoosphereState {
-  return JSON.parse(JSON.stringify(seedState)) as NoosphereState;
-}
+type ApiSubmission = {
+  id: string;
+  questionId: string;
+  contributorId: string;
+  contributorName: string;
+  conclusion: string;
+  premises: string[];
+  confidence: number;
+  changeMind: string;
+  persuasionScore: number;
+  storachaCid: string;
+  storageNetwork: 'storacha' | 'filecoin' | 'local-ipfs';
+  storageGatewayUrl: string | null;
+  reasoningTypes: string[];
+  createdAt: string;
+};
 
-function loadState() {
-  const persisted = localStorage.getItem(STORAGE_KEY);
+type ApiSynthesis = {
+  questionId: string;
+  consensusPoints: string[];
+  dissensusPoints: string[];
+  dominantConclusion: string;
+  minorityViews: string[];
+  summary: string;
+  filecoinCid: string;
+  archiveGatewayUrl: string | null;
+  createdAt: string;
+};
 
-  if (!persisted) {
-    return cloneSeedState();
-  }
+type BootstrapResponse = {
+  questions: ApiQuestion[];
+  submissions: ApiSubmission[];
+  syntheses: ApiSynthesis[];
+  verifications: VerificationRecord[];
+  status: BackendStatus;
+};
 
-  try {
-    return JSON.parse(persisted) as NoosphereState;
-  } catch {
-    return cloneSeedState();
-  }
-}
+type BootstrappedState = NoosphereState;
 
-function persistState(state: NoosphereState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function deriveQuestionStatus(question: Question, syntheses: SynthesisOutput[]) {
-  if (syntheses.some((synthesis) => synthesis.questionId === question.id)) {
-    return 'complete' as const;
-  }
-
-  return new Date(question.deadline) <= new Date() ? 'synthesizing' : 'open';
-}
-
-function normalizeState(state: NoosphereState): NoosphereState {
+function mapQuestion(question: ApiQuestion): Question {
   return {
-    ...state,
-    questions: state.questions.map((question) => ({
-      ...question,
-      status: deriveQuestionStatus(question, state.syntheses),
-    })),
+    id: question.id,
+    text: question.title,
+    description: question.description,
+    creatorName: question.creator,
+    createdAt: question.createdAt,
+    deadline: question.deadline,
+    status:
+      question.status === 'synthesized'
+        ? 'complete'
+        : question.status === 'closed'
+          ? 'synthesizing'
+          : 'open',
+    tags: question.tags,
   };
 }
 
+function mapSubmission(submission: ApiSubmission): ReasoningSubmission {
+  const keywords = extractKeywords(
+    [
+      submission.conclusion,
+      ...submission.premises,
+      submission.changeMind,
+      ...submission.reasoningTypes,
+    ],
+    10,
+  );
+
+  return {
+    id: submission.id,
+    questionId: submission.questionId,
+    contributorName: submission.contributorName,
+    walletAddress: submission.contributorId,
+    premises: submission.premises,
+    conclusion: submission.conclusion,
+    reasoningTypes: submission.reasoningTypes as any,
+    changeMind: submission.changeMind,
+    confidence: Math.round(submission.confidence * 10),
+    qualityScore: submission.persuasionScore,
+    createdAt: submission.createdAt,
+    verificationNullifierHash: submission.contributorId,
+    storageCid: submission.storachaCid,
+    storageNetwork: submission.storageNetwork,
+    storageGatewayUrl: submission.storageGatewayUrl,
+    keywords,
+    clusterId: `cluster-${keywords[0] ?? 'emergent'}`,
+  };
+}
+
+function mapSynthesis(synthesis: ApiSynthesis): SynthesisOutput {
+  return {
+    id: `syn-${synthesis.questionId}`,
+    questionId: synthesis.questionId,
+    generatedAt: synthesis.createdAt,
+    contributorCount: 0,
+    verifiedHumanCount: 0,
+    dominantConclusion: synthesis.dominantConclusion,
+    consensusPoints: synthesis.consensusPoints,
+    dissensusPoints: synthesis.dissensusPoints,
+    minorityViews: synthesis.minorityViews,
+    qualityWeightedSummary: synthesis.summary,
+    archiveCid: synthesis.filecoinCid,
+    storageNetwork: 'filecoin',
+    archiveGatewayUrl: synthesis.archiveGatewayUrl,
+    clusterBreakdown: [],
+  };
+}
+
+function buildBootstrappedState(payload: BootstrapResponse): BootstrappedState {
+  const submissions = payload.submissions.map(mapSubmission);
+  const submissionCounts = new Map<string, number>();
+  const verificationCounts = new Map<string, Set<string>>();
+
+  submissions.forEach((submission) => {
+    submissionCounts.set(
+      submission.questionId,
+      (submissionCounts.get(submission.questionId) ?? 0) + 1,
+    );
+  });
+
+  payload.verifications.forEach((verification) => {
+    const contributors = verificationCounts.get(verification.questionId) ?? new Set<string>();
+    contributors.add(verification.walletAddress.toLowerCase());
+    verificationCounts.set(verification.questionId, contributors);
+  });
+
+  return {
+    questions: payload.questions.map(mapQuestion),
+    submissions,
+    syntheses: payload.syntheses.map((synthesis) => ({
+      ...mapSynthesis(synthesis),
+      contributorCount: submissionCounts.get(synthesis.questionId) ?? 0,
+      verifiedHumanCount: verificationCounts.get(synthesis.questionId)?.size ?? 0,
+    })),
+    verifications: payload.verifications,
+  };
+}
+
+async function request<T>(input: string, init?: RequestInit) {
+  const response = await fetch(input, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    ...init,
+  });
+
+  if (!response.ok) {
+    const payload = await response.text();
+    throw new Error(payload || `${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as T;
+}
+
 export function useNoosphere() {
-  const [state, setState] = useState<NoosphereState>(() => normalizeState(loadState()));
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [state, setState] = useState<NoosphereState>({
+    questions: [],
+    submissions: [],
+    syntheses: [],
+    verifications: [],
+  });
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>({
+    storacha: { ok: false, label: 'Storacha', detail: 'Loading...' },
+    impulse: { ok: false, label: 'Impulse AI', detail: 'Loading...' },
+    openai: { ok: false, label: 'OpenAI', detail: 'Loading...' },
+    filecoin: { ok: false, label: 'Filecoin', detail: 'Loading...' },
+  });
   const [isSynthesizing, setIsSynthesizing] = useState<string | null>(null);
-  const storageStatus = getStorageStatus();
-  const stateRef = useRef(state);
-  const synthInFlight = useRef(new Set<string>());
+
+  const refresh = useCallback(async () => {
+    const payload = await request<BootstrapResponse>('/api/bootstrap');
+    setBackendStatus(payload.status);
+    setState((current) => ({
+      ...current,
+      ...buildBootstrappedState(payload),
+    }));
+  }, []);
 
   useEffect(() => {
-    stateRef.current = state;
-    persistState(state);
-    setIsHydrated(true);
-  }, [state]);
+    void refresh();
+  }, [refresh]);
 
   async function createQuestion(draft: QuestionDraft) {
-    const question: Question = {
-      id: `q-${crypto.randomUUID()}`,
-      text: draft.text.trim(),
-      description: draft.description.trim(),
-      creatorName: draft.creatorName.trim(),
-      deadline: draft.deadline,
-      createdAt: new Date().toISOString(),
-      status: 'open',
-      tags: draft.tags,
-    };
-
-    setState((current) =>
-      normalizeState({
-        ...current,
-        questions: [question, ...current.questions],
+    const question = await request<ApiQuestion>('/api/questions', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: draft.text.trim(),
+        description: draft.description.trim(),
+        creator: draft.creatorName.trim(),
+        deadline: draft.deadline,
+        tags: draft.tags,
       }),
-    );
+    });
 
-    return question;
+    await refresh();
+    return mapQuestion(question);
   }
 
   async function verifyParticipant(draft: VerificationDraft) {
@@ -110,27 +237,16 @@ export function useNoosphere() {
       proof: draft.proof ?? null,
     };
 
-    setState((current) => {
-      const existing = current.verifications.filter(
-        (item) =>
-          !(
-            item.questionId === verification.questionId &&
-            item.walletAddress === verification.walletAddress
-          ),
-      );
-
-      return normalizeState({
-        ...current,
-        verifications: [verification, ...existing],
-      });
+    await request<VerificationRecord>('/api/verifications', {
+      method: 'POST',
+      body: JSON.stringify(verification),
     });
-
+    await refresh();
     return verification;
   }
 
   async function submitReasoning(draft: SubmissionDraft) {
-    const currentState = stateRef.current;
-    const verification = currentState.verifications.find(
+    const verification = state.verifications.find(
       (item) =>
         item.questionId === draft.questionId &&
         item.walletAddress.toLowerCase() === draft.walletAddress.trim().toLowerCase(),
@@ -140,162 +256,82 @@ export function useNoosphere() {
       throw new Error('World ID verification is required before submitting reasoning.');
     }
 
-    const premises = draft.premises.map((premise) => premise.trim()).filter(Boolean);
-    if (premises.length < 2) {
-      throw new Error('At least two premises are required.');
-    }
-
-    const conclusion = draft.conclusion.trim();
-    if (!conclusion) {
-      throw new Error('A conclusion is required.');
-    }
-    const qualityScore = scoreReasoning(
-      premises,
-      conclusion,
-      draft.reasoningTypes,
-      draft.changeMind,
-      draft.confidence,
-    );
-    const keywords = extractKeywords(
-      [...premises, conclusion, draft.changeMind, ...draft.reasoningTypes],
-      10,
-    );
-    const questionSubmissions = currentState.submissions.filter(
-      (submission) => submission.questionId === draft.questionId,
-    );
-
-    const matchedCluster = questionSubmissions
-      .map((submission) => ({
-        clusterId: submission.clusterId,
-        similarity: keywordSimilarity(keywords, submission.keywords),
-      }))
-      .sort((a, b) => b.similarity - a.similarity)[0];
-
-    const clusterId =
-      matchedCluster && matchedCluster.similarity >= 0.28
-        ? matchedCluster.clusterId
-        : `cluster-${keywords[0] ?? 'emergent'}-${crypto.randomUUID().slice(0, 6)}`;
-
-    const submissionId = `sub-${crypto.randomUUID()}`;
-    const storageUpload = await uploadHotReasoningSubmission(
+    const payload = await request<ApiSubmission & { clusterId?: string }>(
+      '/api/reasoning/submit',
       {
-        contributor: draft.contributorName.trim(),
-        walletAddress: draft.walletAddress.trim(),
-        questionId: draft.questionId,
-        premises,
-        conclusion,
-        reasoningTypes: draft.reasoningTypes,
-        changeMind: draft.changeMind.trim(),
-        confidence: draft.confidence,
-        qualityScore,
-        verifiedAt: verification.verifiedAt,
+        method: 'POST',
+        body: JSON.stringify({
+          questionId: draft.questionId,
+          contributorId: draft.walletAddress.trim(),
+          contributorName: draft.contributorName.trim(),
+          conclusion: draft.conclusion.trim(),
+          premises: draft.premises.map((premise) => premise.trim()).filter(Boolean),
+          confidence: Number((draft.confidence / 10).toFixed(2)),
+          changeMind: draft.changeMind.trim(),
+          reasoningTypes: draft.reasoningTypes,
+          engagementCount: 0,
+        }),
       },
-      submissionId,
     );
 
-    const submission: ReasoningSubmission = {
-      id: submissionId,
-      questionId: draft.questionId,
-      contributorName: draft.contributorName.trim(),
-      walletAddress: draft.walletAddress.trim(),
-      premises,
-      conclusion,
-      reasoningTypes: draft.reasoningTypes,
-      changeMind: draft.changeMind.trim(),
-      confidence: draft.confidence,
-      qualityScore,
-      createdAt: new Date().toISOString(),
-      verificationNullifierHash: verification.nullifierHash,
-      storageCid: storageUpload.cid,
-      storageNetwork: storageUpload.network,
-      storageGatewayUrl: storageUpload.gatewayUrl,
-      keywords,
-      clusterId,
+    await refresh();
+
+    return {
+      ...mapSubmission(payload),
+      clusterId:
+        payload.clusterId ??
+        `cluster-${extractKeywords([payload.conclusion, ...payload.premises], 1)[0] ?? 'emergent'}`,
     };
-
-    setState((current) =>
-      normalizeState({
-        ...current,
-        submissions: [submission, ...current.submissions],
-      }),
-    );
-
-    return submission;
   }
 
   async function runSynthesis(questionId: string) {
-    if (synthInFlight.current.has(questionId)) {
-      return stateRef.current.syntheses.find((synthesis) => synthesis.questionId === questionId);
-    }
-
-    const currentState = stateRef.current;
-    const question = currentState.questions.find((item) => item.id === questionId);
-    if (!question) {
-      throw new Error('Question not found.');
-    }
-
-    const questionSubmissions = currentState.submissions.filter(
-      (submission) => submission.questionId === questionId,
-    );
-    if (questionSubmissions.length === 0) {
-      throw new Error('Cannot synthesize without submissions.');
-    }
-
-    synthInFlight.current.add(questionId);
     setIsSynthesizing(questionId);
 
     try {
-      const synthesis = await synthesizeQuestion(
-        question,
-        questionSubmissions,
-        currentState.verifications,
-        (payload) => uploadSessionArchive(payload, question.id),
-      );
-
-      setState((current) => {
-        const syntheses = current.syntheses.filter((item) => item.questionId !== questionId);
-
-        return normalizeState({
-          ...current,
-          syntheses: [synthesis, ...syntheses],
-        });
+      const synthesis = await request<ApiSynthesis>(`/api/questions/${questionId}/synthesize`, {
+        method: 'POST',
       });
 
-      return synthesis;
+      await refresh();
+      return mapSynthesis(synthesis);
     } finally {
-      synthInFlight.current.delete(questionId);
       setIsSynthesizing(null);
     }
   }
 
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
+  async function resetDemoData() {
+    const payload = await request<BootstrapResponse>('/api/admin/reset', { method: 'POST' });
+    setBackendStatus(payload.status);
+    setState(buildBootstrappedState(payload));
+  }
+
+  const storageStatus = useMemo<StorageStatusSummary>(() => {
+    if (backendStatus.storacha.ok) {
+      return {
+        ...backendStatus.storacha,
+        configured: true,
+        network: 'storacha',
+      };
     }
 
-    const dueQuestions = state.questions.filter((question) => {
-      const hasSynthesis = state.syntheses.some((synthesis) => synthesis.questionId === question.id);
-      const hasSubmissions = state.submissions.some(
-        (submission) => submission.questionId === question.id,
-      );
+    if (backendStatus.filecoin.ok) {
+      return {
+        ...backendStatus.filecoin,
+        configured: true,
+        network: 'filecoin',
+      };
+    }
 
-      return !hasSynthesis && hasSubmissions && new Date(question.deadline) <= new Date();
-    });
-
-    dueQuestions.forEach((question) => {
-      if (!synthInFlight.current.has(question.id)) {
-        void runSynthesis(question.id);
-      }
-    });
-  }, [isHydrated, state.questions, state.submissions, state.syntheses]);
-
-  function resetDemoData() {
-    const nextState = normalizeState(cloneSeedState());
-    setState(nextState);
-  }
+    return {
+      ...backendStatus.storacha,
+      configured: false,
+      network: 'local-ipfs',
+    };
+  }, [backendStatus]);
 
   return {
     state,
+    backendStatus,
     storageStatus,
     isSynthesizing,
     createQuestion,
@@ -303,5 +339,6 @@ export function useNoosphere() {
     submitReasoning,
     runSynthesis,
     resetDemoData,
+    refresh,
   };
 }

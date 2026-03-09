@@ -20,6 +20,10 @@ const storachaSpaceDid = import.meta.env.VITE_STORACHA_SPACE_DID?.trim() as Spac
 
 let storachaClientPromise: Promise<import('@storacha/client').Client | null> | null = null;
 
+function readSpaceDid() {
+  return storachaSpaceDid;
+}
+
 function createGatewayUrl(cid: string, network: StorageNetwork) {
   if (network === 'storacha') {
     return `https://storacha.link/ipfs/${cid}`;
@@ -44,6 +48,7 @@ async function getStorachaClient() {
       const delegation = await Proof.parse(storachaProof);
 
       try {
+        const currentSpaceDid = readSpaceDid();
         const existingSpace = storachaSpaceDid
           ? client.spaces().find((space) => space.did() === storachaSpaceDid)
           : undefined;
@@ -54,12 +59,12 @@ async function getStorachaClient() {
         }
 
         const addedSpace = await client.addSpace(delegation);
-        await client.setCurrentSpace(storachaSpaceDid ?? addedSpace.did());
+        await client.setCurrentSpace(currentSpaceDid ?? addedSpace.did());
       } catch (error) {
         await client.addProof(delegation);
 
-        if (storachaSpaceDid) {
-          await client.setCurrentSpace(storachaSpaceDid);
+        if (readSpaceDid()) {
+          await client.setCurrentSpace(readSpaceDid()!);
         }
       }
 
