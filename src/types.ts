@@ -1,20 +1,98 @@
-import { LucideIcon } from 'lucide-react';
+export type Screen = 'landing' | 'question' | 'synthesis';
 
-export type Screen = 'landing' | 'graph' | 'submit' | 'synthesis';
+export type QuestionStatus = 'open' | 'synthesizing' | 'complete';
+export type VerificationMode = 'demo' | 'world-id';
 
-export interface Session {
+export interface Question {
   id: string;
-  title: string;
-  status: 'LIVE' | 'SYNTHESIZING' | 'COMPLETE';
-  progress: number;
-  reasoningChains?: number;
-  contributions?: number;
-  image: string;
-  tag?: string;
+  text: string;
+  description: string;
+  creatorName: string;
+  deadline: string;
+  createdAt: string;
+  status: QuestionStatus;
+  tags: string[];
 }
 
-export interface Premise {
-  id: number;
-  title: string;
-  content: string;
+export interface VerificationRecord {
+  questionId: string;
+  contributorName: string;
+  walletAddress: string;
+  nullifierHash: string;
+  mode: VerificationMode;
+  verifiedAt: string;
+  proof: string | null;
+}
+
+export interface ReasoningSubmission {
+  id: string;
+  questionId: string;
+  contributorName: string;
+  walletAddress: string;
+  premises: string[];
+  conclusion: string;
+  confidence: number;
+  qualityScore: number;
+  createdAt: string;
+  verificationNullifierHash: string;
+  storageCid: string;
+  storageNetwork: 'ipfs';
+  keywords: string[];
+  clusterId: string;
+}
+
+export interface ClusterBreakdown {
+  id: string;
+  label: string;
+  weight: number;
+  stance: 'consensus' | 'dissent';
+  submissionIds: string[];
+}
+
+export interface SynthesisOutput {
+  id: string;
+  questionId: string;
+  generatedAt: string;
+  contributorCount: number;
+  verifiedHumanCount: number;
+  dominantConclusion: string;
+  consensusPoints: string[];
+  dissensusPoints: string[];
+  minorityViews: string[];
+  qualityWeightedSummary: string;
+  archiveCid: string;
+  storageNetwork: 'ipfs';
+  clusterBreakdown: ClusterBreakdown[];
+}
+
+export interface QuestionDraft {
+  text: string;
+  description: string;
+  creatorName: string;
+  deadline: string;
+  tags: string[];
+}
+
+export interface SubmissionDraft {
+  questionId: string;
+  contributorName: string;
+  walletAddress: string;
+  premises: string[];
+  conclusion: string;
+  confidence: number;
+}
+
+export interface VerificationDraft {
+  questionId: string;
+  contributorName: string;
+  walletAddress: string;
+  mode: VerificationMode;
+  proof?: string | null;
+}
+
+export interface NoosphereState {
+  questions: Question[];
+  submissions: ReasoningSubmission[];
+  syntheses: SynthesisOutput[];
+  verifications: VerificationRecord[];
 }

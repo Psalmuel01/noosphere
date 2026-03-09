@@ -9,6 +9,28 @@
   --font-serif: "Source Serif Pro", serif;
 }
 
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--color-background-dark);
+    color: #f8fafc;
+    font-family: var(--font-display);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
 @layer utilities {
   .nebula-gradient {
     background: radial-gradient(circle at 50% 50%, rgba(100, 103, 242, 0.15) 0%, rgba(16, 17, 34, 0) 70%);
@@ -19,4 +41,8 @@
                       radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
     background-size: 550px 550px, 350px 350px, 250px 250px;
   }
+}
+
+.react-flow__panel {
+  margin: 12px;
 }
