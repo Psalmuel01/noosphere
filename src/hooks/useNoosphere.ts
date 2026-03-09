@@ -146,8 +146,20 @@ export function useNoosphere() {
     }
 
     const conclusion = draft.conclusion.trim();
-    const qualityScore = scoreReasoning(premises, conclusion, draft.confidence);
-    const keywords = extractKeywords([...premises, conclusion], 10);
+    if (!conclusion) {
+      throw new Error('A conclusion is required.');
+    }
+    const qualityScore = scoreReasoning(
+      premises,
+      conclusion,
+      draft.reasoningTypes,
+      draft.changeMind,
+      draft.confidence,
+    );
+    const keywords = extractKeywords(
+      [...premises, conclusion, draft.changeMind, ...draft.reasoningTypes],
+      10,
+    );
     const questionSubmissions = currentState.submissions.filter(
       (submission) => submission.questionId === draft.questionId,
     );
@@ -172,6 +184,8 @@ export function useNoosphere() {
         questionId: draft.questionId,
         premises,
         conclusion,
+        reasoningTypes: draft.reasoningTypes,
+        changeMind: draft.changeMind.trim(),
         confidence: draft.confidence,
         qualityScore,
         verifiedAt: verification.verifiedAt,
@@ -186,6 +200,8 @@ export function useNoosphere() {
       walletAddress: draft.walletAddress.trim(),
       premises,
       conclusion,
+      reasoningTypes: draft.reasoningTypes,
+      changeMind: draft.changeMind.trim(),
       confidence: draft.confidence,
       qualityScore,
       createdAt: new Date().toISOString(),

@@ -55,3 +55,21 @@ Notes:
 - Storacha uses the delegated proof flow rather than an embedded server.
 - Official World ID verification still requires a signed RP context.
 - The fallback path is intentional so the app remains a normal React app with no backend requirement.
+
+## Generate World RP Context
+
+For local testing, you can generate a fresh `rp_context` JSON blob with:
+
+```bash
+RP_ID=rp_xxx RP_SIGNING_KEY=sk_xxx npm run world:rp-context -- noosphere-submit-reasoning
+```
+
+This prints the JSON object expected by `VITE_WORLD_ID_RP_CONTEXT_JSON`.
+
+To refresh `.env.local` in place with a new signed context:
+
+```bash
+RP_ID=rp_xxx RP_SIGNING_KEY=sk_xxx npm run world:refresh-env -- noosphere-submit-reasoning
+```
+
+Restart Vite after refreshing so the new `VITE_` value is loaded.

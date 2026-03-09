@@ -3,6 +3,12 @@ export type Screen = 'landing' | 'question' | 'synthesis';
 export type QuestionStatus = 'open' | 'synthesizing' | 'complete';
 export type VerificationMode = 'demo' | 'world-id';
 export type StorageNetwork = 'storacha' | 'local-ipfs';
+export type ReasoningType =
+  | 'empirical evidence'
+  | 'historical precedent'
+  | 'logical inference'
+  | 'personal expertise'
+  | 'analogy';
 
 export interface Question {
   id: string;
@@ -32,6 +38,8 @@ export interface ReasoningSubmission {
   walletAddress: string;
   premises: string[];
   conclusion: string;
+  reasoningTypes: ReasoningType[];
+  changeMind: string;
   confidence: number;
   qualityScore: number;
   createdAt: string;
@@ -82,6 +90,8 @@ export interface SubmissionDraft {
   walletAddress: string;
   premises: string[];
   conclusion: string;
+  reasoningTypes: ReasoningType[];
+  changeMind: string;
   confidence: number;
 }
 

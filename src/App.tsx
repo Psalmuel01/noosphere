@@ -33,6 +33,7 @@ import { useNoosphere } from './hooks/useNoosphere';
 import {
   Question,
   QuestionStatus,
+  ReasoningType,
   ReasoningSubmission,
   Screen,
   SubmissionDraft,
@@ -56,11 +57,21 @@ const WorldIdVerificationButton = lazy(() =>
   })),
 );
 
+const REASONING_TYPE_OPTIONS: ReasoningType[] = [
+  'empirical evidence',
+  'historical precedent',
+  'logical inference',
+  'personal expertise',
+  'analogy',
+];
+
 const emptySubmissionForm: SubmissionFormState = {
   contributorName: '',
   walletAddress: '',
   premises: ['', '', '', '', ''],
   conclusion: '',
+  reasoningTypes: [],
+  changeMind: '',
   confidence: 7,
 };
 
@@ -314,6 +325,8 @@ export default function App() {
       walletAddress: submissionForm.walletAddress,
       premises: submissionForm.premises.filter((premise) => premise.trim()),
       conclusion: submissionForm.conclusion,
+      reasoningTypes: submissionForm.reasoningTypes,
+      changeMind: submissionForm.changeMind,
       confidence: submissionForm.confidence,
     };
 
@@ -323,6 +336,8 @@ export default function App() {
       ...current,
       premises: ['', '', '', '', ''],
       conclusion: '',
+      reasoningTypes: [],
+      changeMind: '',
       confidence: 7,
     }));
   }
@@ -381,9 +396,9 @@ export default function App() {
             <Box className="h-8 w-8" />
             <div className="text-left">
               <p className="text-lg font-bold tracking-tight text-slate-100">Noosphere</p>
-              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+              {/* <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
                 Swarm Intelligence Reasoning Engine
-              </p>
+              </p> */}
             </div>
           </button>
           <div className="hidden items-center gap-4 lg:flex">
@@ -416,22 +431,19 @@ export default function App() {
                 <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 nebula-gradient" />
                 <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.2fr_0.8fr]">
                   <div className="space-y-8">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-primary">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font- uppercase tracking-[0.25em] text-primary">
                       <span className="relative flex h-2 w-2">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                         <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                       </span>
-                      Democracy aggregates votes. Noosphere aggregates reasoning.
+                      Decentralized reasoning engine.
                     </div>
                     <div className="space-y-4">
                       <h1 className="max-w-4xl text-5xl font-bold leading-tight tracking-tight md:text-7xl">
-                        Collective deliberation with verified humans, live reasoning graphs, and
-                        transparent synthesis.
+                        THE SPHERE OF THOUGHT
                       </h1>
                       <p className="max-w-2xl text-lg leading-relaxed text-slate-400">
-                        Submit structured reasoning, push active session data through hot storage,
-                        watch clusters form in real time, and produce a quality-weighted synthesis
-                        with content-addressed provenance.
+                        Democracy aggregates votes. Noosphere aggregates reasoning.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-4">
@@ -468,11 +480,10 @@ export default function App() {
                       </p>
                       <div className="mt-3 flex items-center gap-3">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${
-                            storageStatus.network === 'storacha'
-                              ? 'bg-teal-500/10 text-teal-400'
-                              : 'bg-amber-500/10 text-amber-400'
-                          }`}
+                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${storageStatus.network === 'storacha'
+                            ? 'bg-teal-500/10 text-teal-400'
+                            : 'bg-amber-500/10 text-amber-400'
+                            }`}
                         >
                           {storageStatus.label}
                         </span>
@@ -579,11 +590,10 @@ export default function App() {
                       <button
                         key={value}
                         onClick={() => setFilterStatus(value as FilterStatus)}
-                        className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] transition ${
-                          filterStatus === value
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-slate-800 text-slate-400 hover:border-primary/40'
-                        }`}
+                        className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] transition ${filterStatus === value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-slate-800 text-slate-400 hover:border-primary/40'
+                          }`}
                       >
                         <Filter className="mr-2 inline h-3.5 w-3.5" />
                         {label}
@@ -753,6 +763,35 @@ export default function App() {
                       </Suspense>
                     </div>
 
+                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+                        Step 1 · Your Answer
+                      </label>
+                      <p className="mt-2 text-sm text-slate-400">
+                        What is your answer to this question?
+                      </p>
+                      <textarea
+                        value={submissionForm.conclusion}
+                        onChange={(event) =>
+                          setSubmissionForm((current) => ({
+                            ...current,
+                            conclusion: event.target.value,
+                          }))
+                        }
+                        placeholder="State your answer or conclusion clearly."
+                        className="mt-3 min-h-28 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+                        Step 2 · Why?
+                      </label>
+                      <p className="mt-2 text-sm text-slate-400">
+                        Add at least two reasoning blocks. Claim first, then evidence.
+                      </p>
+                    </div>
+
                     {submissionForm.premises.map((premise, index) => (
                       <textarea
                         key={index}
@@ -769,29 +808,72 @@ export default function App() {
                           'Because...',
                           'Given that...',
                           'Evidence shows...',
-                          'Considering...',
                           'Furthermore...',
+                          'Considering...',
                         ][index]}
                         className="min-h-20 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
                       />
                     ))}
 
-                    <textarea
-                      value={submissionForm.conclusion}
-                      onChange={(event) =>
-                        setSubmissionForm((current) => ({
-                          ...current,
-                          conclusion: event.target.value,
-                        }))
-                      }
-                      placeholder="Therefore..."
-                      className="min-h-28 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
-                    />
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+                        Step 3 · Reasoning Type
+                      </label>
+                      <p className="mt-2 text-sm text-slate-400">
+                        Tag the type of argument you are making so synthesis can group it correctly.
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {REASONING_TYPE_OPTIONS.map((option) => {
+                          const selected = submissionForm.reasoningTypes.includes(option);
+
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setSubmissionForm((current) => ({
+                                  ...current,
+                                  reasoningTypes: selected
+                                    ? current.reasoningTypes.filter((item) => item !== option)
+                                    : [...current.reasoningTypes, option],
+                                }))
+                              }
+                              className={`rounded-full border px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] transition ${selected
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-slate-700 text-slate-400 hover:border-primary/40'
+                                }`}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+                        Step 4 · What Would Change Your Mind?
+                      </label>
+                      <p className="mt-2 text-sm text-slate-400">
+                        State the evidence or condition that would make you reconsider.
+                      </p>
+                      <textarea
+                        value={submissionForm.changeMind}
+                        onChange={(event) =>
+                          setSubmissionForm((current) => ({
+                            ...current,
+                            changeMind: event.target.value,
+                          }))
+                        }
+                        placeholder="What evidence would change your conclusion?"
+                        className="mt-3 min-h-24 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
+                      />
+                    </div>
 
                     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <label className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
-                          Confidence
+                          Step 5 · Confidence
                         </label>
                         <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white">
                           {submissionForm.confidence}/10
@@ -896,15 +978,19 @@ export default function App() {
                             {Math.round(activeSubmission.qualityScore * 100)}% quality
                           </div>
                         </div>
+                        {activeSubmission.reasoningTypes.length > 0 && (
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            {activeSubmission.reasoningTypes.map((type) => (
+                              <span
+                                key={type}
+                                className="rounded-full border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300"
+                              >
+                                {type}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <div className="space-y-4">
-                          {activeSubmission.premises.map((premise, index) => (
-                            <div key={index} className="border-l-2 border-slate-800 pl-4">
-                              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-                                Premise {index + 1}
-                              </p>
-                              <p className="text-sm leading-relaxed text-slate-300">{premise}</p>
-                            </div>
-                          ))}
                           <div className="border-l-2 border-primary pl-4">
                             <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
                               Conclusion
@@ -913,6 +999,24 @@ export default function App() {
                               {activeSubmission.conclusion}
                             </p>
                           </div>
+                          {activeSubmission.premises.map((premise, index) => (
+                            <div key={index} className="border-l-2 border-slate-800 pl-4">
+                              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                                Premise {index + 1}
+                              </p>
+                              <p className="text-sm leading-relaxed text-slate-300">{premise}</p>
+                            </div>
+                          ))}
+                          {activeSubmission.changeMind && (
+                            <div className="border-l-2 border-amber-400 pl-4">
+                              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-400">
+                                Would Change Mind If
+                              </p>
+                              <p className="text-sm leading-relaxed text-slate-300">
+                                {activeSubmission.changeMind}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1095,11 +1199,10 @@ export default function App() {
                           <div className="mb-2 flex items-center justify-between">
                             <p className="font-bold text-slate-100">{cluster.label}</p>
                             <span
-                              className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${
-                                cluster.stance === 'consensus'
-                                  ? 'bg-teal-500/10 text-teal-400'
-                                  : 'bg-amber-500/10 text-amber-400'
-                              }`}
+                              className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${cluster.stance === 'consensus'
+                                ? 'bg-teal-500/10 text-teal-400'
+                                : 'bg-amber-500/10 text-amber-400'
+                                }`}
                             >
                               {cluster.stance}
                             </span>
@@ -1244,8 +1347,22 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="border-t border-slate-800 px-6 py-8 text-center text-xs uppercase tracking-[0.25em] text-slate-600 md:px-12">
-        Normal React app. World ID ready. Storacha hot storage with deterministic local fallback.
+      <footer class="bg-background-dark border-t border-slate-800 py-12 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div class="flex items-center gap-3 text-primary opacity-70 grayscale hover:grayscale-0 transition-all">
+            <Box className="h-8 w-8" />
+            <h2 class="text-slate-100 text-lg font-bold">Noosphere</h2>
+          </div>
+          <div class="flex gap-8 text-sm text-slate-500">
+            <a class="hover:text-primary" href="#">Docs</a>
+            <a class="hover:text-primary" href="#">Github</a>
+            <a class="hover:text-primary" href="#">Twitter</a>
+            <a class="hover:text-primary" href="#">Discord</a>
+          </div>
+          <p class="text-slate-600 text-xs">
+            © 2026 Noosphere Collective Intelligence. Built for the future of thought.
+          </p>
+        </div>
       </footer>
     </div>
   );
@@ -1258,9 +1375,8 @@ function VerificationFallback() {
 function GraphFallback({ compact = false }: { compact?: boolean }) {
   return (
     <div
-      className={`flex h-full items-center justify-center rounded-3xl border border-slate-800 bg-slate-950/40 ${
-        compact ? 'min-h-[240px]' : 'min-h-[420px]'
-      }`}
+      className={`flex h-full items-center justify-center rounded-3xl border border-slate-800 bg-slate-950/40 ${compact ? 'min-h-[240px]' : 'min-h-[420px]'
+        }`}
     >
       <div className="text-center">
         <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Loading graph</p>

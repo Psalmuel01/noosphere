@@ -96,6 +96,9 @@ export const seedState: NoosphereState = {
       ],
       conclusion:
         'Misalignment under rapid capability growth is the most credible existential AGI risk.',
+      reasoningTypes: ['logical inference', 'empirical evidence'],
+      changeMind:
+        'Robust empirical evidence that frontier systems remain corrigible under recursive self-improvement would weaken this conclusion.',
       confidence: 9,
       qualityScore: 0.92,
       createdAt: '2026-03-07T11:01:00.000Z',
@@ -118,6 +121,9 @@ export const seedState: NoosphereState = {
       ],
       conclusion:
         'The dominant AGI danger is loss of containment once autonomous systems can self-propagate.',
+      reasoningTypes: ['empirical evidence', 'historical precedent'],
+      changeMind:
+        'A proven containment regime that works under adversarial tests across multiple labs would change my view.',
       confidence: 8,
       qualityScore: 0.88,
       createdAt: '2026-03-07T11:06:00.000Z',
@@ -140,6 +146,9 @@ export const seedState: NoosphereState = {
       ],
       conclusion:
         'Deployment incentives and governance failure are the key multipliers of AGI risk, even if model alignment improves.',
+      reasoningTypes: ['logical inference', 'historical precedent'],
+      changeMind:
+        'If strong international governance prevented premature deployment while maintaining competition, I would reduce the weight of this argument.',
       confidence: 7,
       qualityScore: 0.81,
       createdAt: '2026-03-07T11:09:00.000Z',
@@ -162,6 +171,9 @@ export const seedState: NoosphereState = {
       ],
       conclusion:
         'Advanced economies should prioritize firm nuclear capacity where grids lack seasonal storage and transmission slack.',
+      reasoningTypes: ['empirical evidence', 'logical inference'],
+      changeMind:
+        'Breakthrough seasonal storage economics at scale would reduce the need for firm nuclear buildout.',
       confidence: 8,
       qualityScore: 0.86,
       createdAt: '2026-03-08T09:02:00.000Z',
@@ -184,6 +196,9 @@ export const seedState: NoosphereState = {
       ],
       conclusion:
         'Ethereum should prioritize L2 interoperability and simpler user experience ahead of new protocol complexity.',
+      reasoningTypes: ['personal expertise', 'logical inference'],
+      changeMind:
+        'If new protocol features could be adopted without worsening UX fragmentation, I would rebalance toward them.',
       confidence: 8,
       qualityScore: 0.84,
       createdAt: '2026-03-08T12:04:00.000Z',

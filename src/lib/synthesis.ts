@@ -20,6 +20,21 @@ function unique<T>(items: T[]) {
   return [...new Set(items)];
 }
 
+function topReasoningModes(submissions: ReasoningSubmission[]) {
+  const counts = new Map<string, number>();
+
+  submissions.forEach((submission) => {
+    submission.reasoningTypes.forEach((type) => {
+      counts.set(type, (counts.get(type) ?? 0) + 1);
+    });
+  });
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([type]) => type);
+}
+
 export async function synthesizeQuestion(
   question: Question,
   submissions: ReasoningSubmission[],
@@ -118,6 +133,12 @@ export async function synthesizeQuestion(
     submissions.flatMap((submission) => [...submission.premises, submission.conclusion]),
     6,
   );
+  const reasoningModes = topReasoningModes(submissions);
+  const changeMindSignals = unique(
+    submissions
+      .map((submission) => submission.changeMind.trim())
+      .filter((item) => item.length > 0),
+  ).slice(0, 2);
 
   const qualityWeightedSummary = [
     `Noosphere aggregated ${submissions.length} structured reasoning chains from ${verifiedHumanCount} verified humans on "${question.text}".`,
@@ -125,9 +146,15 @@ export async function synthesizeQuestion(
     topSignals.length > 0
       ? `The highest-signal themes across the session were ${topSignals.slice(0, 4).join(', ')}.`
       : 'The session produced enough overlap to form a clear consensus cluster.',
+    reasoningModes.length > 0
+      ? `The most common reasoning modes were ${reasoningModes.join(', ')}.`
+      : 'Participants used multiple reasoning styles without a dominant mode.',
     minorityViews[0]
       ? `A meaningful minority view remained active: ${minorityViews[0]}`
       : 'No minority view accumulated enough weight to seriously challenge the leading conclusion.',
+    changeMindSignals[0]
+      ? `Common falsification threshold: ${changeMindSignals[0]}`
+      : 'Few contributors specified what evidence would change their position.',
   ].join(' ');
 
   const synthesisWithoutArchive = {
