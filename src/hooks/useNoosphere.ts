@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { seedState } from '../data/seed';
-import { createHexDigest, createIpfsCid } from '../lib/cid';
+import { createHexDigest } from '../lib/cid';
 import { extractKeywords, keywordSimilarity, scoreReasoning } from '../lib/scoring';
+import {
+  getStorageStatus,
+  uploadHotReasoningSubmission,
+  uploadSessionArchive,
+} from '../lib/storage';
 import { synthesizeQuestion } from '../lib/synthesis';
 import {
   NoosphereState,
@@ -60,6 +65,7 @@ export function useNoosphere() {
   const [state, setState] = useState<NoosphereState>(() => normalizeState(loadState()));
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSynthesizing, setIsSynthesizing] = useState<string | null>(null);
+  const storageStatus = getStorageStatus();
   const stateRef = useRef(state);
   const synthInFlight = useRef(new Set<string>());
 
@@ -158,8 +164,23 @@ export function useNoosphere() {
         ? matchedCluster.clusterId
         : `cluster-${keywords[0] ?? 'emergent'}-${crypto.randomUUID().slice(0, 6)}`;
 
+    const submissionId = `sub-${crypto.randomUUID()}`;
+    const storageUpload = await uploadHotReasoningSubmission(
+      {
+        contributor: draft.contributorName.trim(),
+        walletAddress: draft.walletAddress.trim(),
+        questionId: draft.questionId,
+        premises,
+        conclusion,
+        confidence: draft.confidence,
+        qualityScore,
+        verifiedAt: verification.verifiedAt,
+      },
+      submissionId,
+    );
+
     const submission: ReasoningSubmission = {
-      id: `sub-${crypto.randomUUID()}`,
+      id: submissionId,
       questionId: draft.questionId,
       contributorName: draft.contributorName.trim(),
       walletAddress: draft.walletAddress.trim(),
@@ -169,15 +190,9 @@ export function useNoosphere() {
       qualityScore,
       createdAt: new Date().toISOString(),
       verificationNullifierHash: verification.nullifierHash,
-      storageCid: await createIpfsCid({
-        contributor: draft.contributorName.trim(),
-        walletAddress: draft.walletAddress.trim(),
-        premises,
-        conclusion,
-        confidence: draft.confidence,
-        qualityScore,
-      }),
-      storageNetwork: 'ipfs',
+      storageCid: storageUpload.cid,
+      storageNetwork: storageUpload.network,
+      storageGatewayUrl: storageUpload.gatewayUrl,
       keywords,
       clusterId,
     };
@@ -218,6 +233,7 @@ export function useNoosphere() {
         question,
         questionSubmissions,
         currentState.verifications,
+        (payload) => uploadSessionArchive(payload, question.id),
       );
 
       setState((current) => {
@@ -264,6 +280,7 @@ export function useNoosphere() {
 
   return {
     state,
+    storageStatus,
     isSynthesizing,
     createQuestion,
     verifyParticipant,

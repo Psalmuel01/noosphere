@@ -6,7 +6,8 @@ Noosphere is a client-side swarm-intelligence reasoning engine built with React 
 - verify contributors per question
 - submit structured reasoning chains with premises, conclusion, and confidence
 - watch reasoning clusters form in a live graph
-- generate a quality-weighted synthesis with IPFS-compatible provenance
+- push active submissions through Storacha hot storage when configured
+- generate a quality-weighted synthesis with content-addressed provenance
 
 ## Stack
 
@@ -14,7 +15,8 @@ Noosphere is a client-side swarm-intelligence reasoning engine built with React 
 - Tailwind CSS v4
 - React Flow for the reasoning graph
 - World ID React SDK for optional verification
-- `multiformats` for IPFS-compatible CID generation
+- Storacha client for hot storage uploads
+- `multiformats` for deterministic local CID fallback
 - `localStorage` for local persistence
 
 ## Run locally
@@ -28,9 +30,19 @@ Noosphere is a client-side swarm-intelligence reasoning engine built with React 
 
 ## Environment
 
-World ID is optional. The app works in demo verification mode without any env vars.
+The app is fully usable without env vars:
 
-If you want to enable the client-side World ID widget, set:
+- World ID falls back to demo verification
+- Storacha falls back to deterministic local CIDs in browser storage
+
+If you want live Storacha uploads, provide a delegated proof and space DID:
+
+```bash
+VITE_STORACHA_PROOF=
+VITE_STORACHA_SPACE_DID=
+```
+
+If you want to enable the client-side World ID widget, also set:
 
 ```bash
 VITE_WORLD_ID_APP_ID=app_example
@@ -38,4 +50,8 @@ VITE_WORLD_ID_ACTION=noosphere-submit-reasoning
 VITE_WORLD_ID_RP_CONTEXT_JSON={"rp_id":"rp_example","nonce":"nonce","created_at":0,"expires_at":0,"signature":"signature"}
 ```
 
-Note: official World ID verification still requires a signed RP context. This app keeps a demo verification fallback so the product remains fully usable as a normal React app.
+Notes:
+
+- Storacha uses the delegated proof flow rather than an embedded server.
+- Official World ID verification still requires a signed RP context.
+- The fallback path is intentional so the app remains a normal React app with no backend requirement.

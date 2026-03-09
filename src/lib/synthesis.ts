@@ -5,12 +5,12 @@ import {
   SynthesisOutput,
   VerificationRecord,
 } from '../types';
-import { createIpfsCid } from './cid';
 import {
   clusterLabelFromKeywords,
   extractKeywords,
   keywordSimilarity,
 } from './scoring';
+import { StorageUploadResult } from './storage';
 
 function getSubmissionWeight(submission: ReasoningSubmission) {
   return submission.qualityScore * (0.45 + submission.confidence / 10 * 0.55);
@@ -24,6 +24,7 @@ export async function synthesizeQuestion(
   question: Question,
   submissions: ReasoningSubmission[],
   verifications: VerificationRecord[],
+  archiveSession: (payload: unknown) => Promise<StorageUploadResult>,
 ): Promise<SynthesisOutput> {
   if (submissions.length === 0) {
     throw new Error('Cannot synthesize a question with no reasoning submissions.');
@@ -142,11 +143,10 @@ export async function synthesizeQuestion(
     dissensusPoints,
     minorityViews,
     qualityWeightedSummary,
-    storageNetwork: 'ipfs' as const,
     clusterBreakdown,
   };
 
-  const archiveCid = await createIpfsCid({
+  const archiveUpload = await archiveSession({
     question,
     submissions,
     synthesis: synthesisWithoutArchive,
@@ -154,6 +154,8 @@ export async function synthesizeQuestion(
 
   return {
     ...synthesisWithoutArchive,
-    archiveCid,
+    archiveCid: archiveUpload.cid,
+    storageNetwork: archiveUpload.network,
+    archiveGatewayUrl: archiveUpload.gatewayUrl,
   };
 }

@@ -190,8 +190,16 @@ function QuestionCard({
 }
 
 export default function App() {
-  const { state, isSynthesizing, createQuestion, verifyParticipant, submitReasoning, runSynthesis, resetDemoData } =
-    useNoosphere();
+  const {
+    state,
+    storageStatus,
+    isSynthesizing,
+    createQuestion,
+    verifyParticipant,
+    submitReasoning,
+    runSynthesis,
+    resetDemoData,
+  } = useNoosphere();
   const [screen, setScreen] = useState<Screen>('landing');
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(state.questions[0]?.id ?? null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
@@ -421,8 +429,9 @@ export default function App() {
                         transparent synthesis.
                       </h1>
                       <p className="max-w-2xl text-lg leading-relaxed text-slate-400">
-                        Submit structured reasoning, watch clusters form in real time, and produce a
-                        quality-weighted synthesis with IPFS-addressed provenance.
+                        Submit structured reasoning, push active session data through hot storage,
+                        watch clusters form in real time, and produce a quality-weighted synthesis
+                        with content-addressed provenance.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-4">
@@ -452,6 +461,25 @@ export default function App() {
                           <p className="mt-2 text-3xl font-bold text-slate-100">{value}</p>
                         </div>
                       ))}
+                    </div>
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                      <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                        Storage layer
+                      </p>
+                      <div className="mt-3 flex items-center gap-3">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${
+                            storageStatus.network === 'storacha'
+                              ? 'bg-teal-500/10 text-teal-400'
+                              : 'bg-amber-500/10 text-amber-400'
+                          }`}
+                        >
+                          {storageStatus.label}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                        {storageStatus.detail}
+                      </p>
                     </div>
                   </div>
 
@@ -794,9 +822,14 @@ export default function App() {
                     </button>
                     <div className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
                       <Cloud className="mt-0.5 h-4 w-4 text-primary" />
-                      Each submission is content-addressed to an IPFS-compatible CID locally. This
-                      replaces the old Filecoin mock and keeps provenance aligned with the product
-                      model in a client-only app.
+                      Active reasoning is uploaded to{' '}
+                      {storageStatus.network === 'storacha'
+                        ? 'Storacha'
+                        : 'a local fallback CID layer'}{' '}
+                      immediately.
+                      {storageStatus.network === 'storacha'
+                        ? ' Each submission returns a live CID for the graph and synthesis pipeline.'
+                        : ' Add a Storacha delegation to move hot storage off the browser.'}
                     </div>
                   </div>
                 </aside>
@@ -908,9 +941,31 @@ export default function App() {
                           <div className="flex items-start gap-3">
                             <Cloud className="mt-0.5 h-4 w-4 text-primary" />
                             <div>
-                              <p className="font-bold text-slate-100">IPFS-compatible CID</p>
+                              <p className="font-bold text-slate-100">Reasoning object CID</p>
                               <p className="break-all font-mono text-xs text-slate-500">
                                 {activeSubmission.storageCid}
+                              </p>
+                              {activeSubmission.storageGatewayUrl && (
+                                <a
+                                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-primary"
+                                  href={activeSubmission.storageGatewayUrl}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  Open object
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Database className="mt-0.5 h-4 w-4 text-primary" />
+                            <div>
+                              <p className="font-bold text-slate-100">Hot storage layer</p>
+                              <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">
+                                {activeSubmission.storageNetwork === 'storacha'
+                                  ? 'Storacha'
+                                  : 'Local fallback'}
                               </p>
                             </div>
                           </div>
@@ -1109,13 +1164,28 @@ export default function App() {
                           <p className="break-all font-mono text-xs text-slate-500">
                             {activeMetrics.synthesis.archiveCid}
                           </p>
+                          {activeMetrics.synthesis.archiveGatewayUrl && (
+                            <a
+                              className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-primary"
+                              href={activeMetrics.synthesis.archiveGatewayUrl}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              Open archive
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <Cloud className="mt-0.5 h-4 w-4 text-primary" />
                         <div>
                           <p className="font-bold text-slate-100">Storage network</p>
-                          <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">IPFS</p>
+                          <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">
+                            {activeMetrics.synthesis.storageNetwork === 'storacha'
+                              ? 'Storacha archive'
+                              : 'Local fallback'}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
@@ -1123,9 +1193,9 @@ export default function App() {
                         <div>
                           <p className="font-bold text-slate-100">Retrievability note</p>
                           <p className="text-xs leading-relaxed text-slate-500">
-                            This build uses browser-generated IPFS-compatible CIDs for immutable-style
-                            provenance in a client-only React app. Add a remote pinning layer later if
-                            you want shared persistence across users.
+                            {activeMetrics.synthesis.storageNetwork === 'storacha'
+                              ? 'Active submissions were uploaded as hot objects and the closed-session archive was published as a content-addressed JSON artifact.'
+                              : 'This session used the browser fallback path. Configure Storacha to turn active submissions into remotely retrievable objects.'}
                           </p>
                         </div>
                       </div>
@@ -1174,9 +1244,9 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* <footer className="border-t border-slate-800 px-6 py-8 text-center text-xs uppercase tracking-[0.25em] text-slate-600 md:px-12">
-        Normal React app. World ID ready. IPFS-addressed provenance. No server required.
-      </footer> */}
+      <footer className="border-t border-slate-800 px-6 py-8 text-center text-xs uppercase tracking-[0.25em] text-slate-600 md:px-12">
+        Normal React app. World ID ready. Storacha hot storage with deterministic local fallback.
+      </footer>
     </div>
   );
 }

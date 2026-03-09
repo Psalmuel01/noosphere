@@ -2,6 +2,7 @@ export type Screen = 'landing' | 'question' | 'synthesis';
 
 export type QuestionStatus = 'open' | 'synthesizing' | 'complete';
 export type VerificationMode = 'demo' | 'world-id';
+export type StorageNetwork = 'storacha' | 'local-ipfs';
 
 export interface Question {
   id: string;
@@ -36,7 +37,8 @@ export interface ReasoningSubmission {
   createdAt: string;
   verificationNullifierHash: string;
   storageCid: string;
-  storageNetwork: 'ipfs';
+  storageNetwork: StorageNetwork;
+  storageGatewayUrl: string | null;
   keywords: string[];
   clusterId: string;
 }
@@ -61,7 +63,8 @@ export interface SynthesisOutput {
   minorityViews: string[];
   qualityWeightedSummary: string;
   archiveCid: string;
-  storageNetwork: 'ipfs';
+  storageNetwork: StorageNetwork;
+  archiveGatewayUrl: string | null;
   clusterBreakdown: ClusterBreakdown[];
 }
 
