@@ -214,8 +214,8 @@ export function useNoosphere() {
       body: JSON.stringify({
         title: draft.text.trim(),
         description: draft.description.trim(),
-        creator: draft.creatorName.trim(),
-        deadline: draft.deadline,
+        creator: draft.creatorName.trim() || undefined,
+        deadline: draft.deadline || undefined,
         tags: draft.tags,
       }),
     });
@@ -246,24 +246,18 @@ export function useNoosphere() {
   }
 
   async function submitReasoning(draft: SubmissionDraft) {
-    const verification = state.verifications.find(
-      (item) =>
-        item.questionId === draft.questionId &&
-        item.walletAddress.toLowerCase() === draft.walletAddress.trim().toLowerCase(),
-    );
-
-    if (!verification) {
-      throw new Error('World ID verification is required before submitting reasoning.');
-    }
+    const contributorName = draft.contributorName.trim() || 'Anonymous';
+    const contributorId =
+      draft.walletAddress.trim() ||
+      `anon_${(await createHexDigest(`${draft.questionId}:${contributorName}:${Date.now()}`)).slice(0, 12)}`;
 
     const payload = await request<ApiSubmission & { clusterId?: string }>(
-      '/api/reasoning/submit',
+      `/api/questions/${draft.questionId}/reasoning`,
       {
         method: 'POST',
         body: JSON.stringify({
-          questionId: draft.questionId,
-          contributorId: draft.walletAddress.trim(),
-          contributorName: draft.contributorName.trim(),
+          contributorId,
+          contributorName,
           conclusion: draft.conclusion.trim(),
           premises: draft.premises.map((premise) => premise.trim()).filter(Boolean),
           confidence: Number((draft.confidence / 10).toFixed(2)),
@@ -288,7 +282,7 @@ export function useNoosphere() {
     setIsSynthesizing(questionId);
 
     try {
-      const synthesis = await request<ApiSynthesis>(`/api/questions/${questionId}/synthesize`, {
+      const synthesis = await request<ApiSynthesis>(`/api/questions/${questionId}/aggregate`, {
         method: 'POST',
       });
 

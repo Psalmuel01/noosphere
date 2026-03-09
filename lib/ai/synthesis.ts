@@ -16,7 +16,7 @@ export type OpenAISynthesis = z.infer<typeof synthesisSchema> & {
 };
 
 function fallbackSynthesis(question: QuestionRecord, submissions: SubmissionRecord[]): OpenAISynthesis {
-  const ranked = [...submissions].sort((a, b) => b.persuasionScore - a.persuasionScore);
+  const ranked = [...submissions].sort((a, b) => b.confidence - a.confidence);
   const dominant = ranked[0];
 
   return {
@@ -52,7 +52,7 @@ export async function synthesizeReasoning(
   submissions: SubmissionRecord[],
 ): Promise<OpenAISynthesis> {
   const ranked = [...submissions]
-    .sort((a, b) => b.persuasionScore - a.persuasionScore)
+    .sort((a, b) => b.confidence - a.confidence)
     .slice(0, 25);
 
   if (!env.OPENAI_API_KEY) {
@@ -60,61 +60,77 @@ export async function synthesizeReasoning(
   }
 
   const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  const response = await client.responses.create({
-    model: env.OPENAI_MODEL,
-    instructions:
-      'You are a collective reasoning synthesizer. Analyze structured submissions, identify consensus and dissensus, and respond with strict JSON matching the provided schema.',
-    input: [
-      {
-        role: 'user',
-        content: JSON.stringify({
-          question: {
-            title: question.title,
-            description: question.description,
+  const formattedSubmissions = ranked
+    .map(
+      (submission, index) => `${index + 1}.
+Conclusion:
+${submission.conclusion}
+
+Premises:
+${submission.premises.map((premise, premiseIndex) => `${premiseIndex + 1}. ${premise}`).join('\n')}
+
+Confidence: ${submission.confidence}`,
+    )
+    .join('\n\n');
+
+  try {
+    const response = await client.responses.create({
+      model: env.OPENAI_MODEL,
+      instructions:
+        'Analyze the reasoning submissions and produce: 1. Key consensus points 2. Major disagreements 3. The dominant conclusion 4. Minority viewpoints 5. A short summary of the collective reasoning. Respond with strict JSON matching the provided schema.',
+      input: [
+        {
+          role: 'user',
+          content: `Question:
+${question.title}
+
+Question description:
+${question.description}
+
+Reasoning submissions:
+
+${formattedSubmissions}`,
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'noosphere_synthesis',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              consensusPoints: { type: 'array', items: { type: 'string' } },
+              dissensusPoints: { type: 'array', items: { type: 'string' } },
+              dominantConclusion: { type: 'string' },
+              minorityViews: { type: 'array', items: { type: 'string' } },
+              summary: { type: 'string' },
+            },
+            required: [
+              'consensusPoints',
+              'dissensusPoints',
+              'dominantConclusion',
+              'minorityViews',
+              'summary',
+            ],
           },
-          submissions: ranked.map((submission) => ({
-            contributorId: submission.contributorId,
-            persuasionScore: submission.persuasionScore,
-            confidence: submission.confidence,
-            conclusion: submission.conclusion,
-            premises: submission.premises,
-            reasoningTypes: submission.reasoningTypes,
-            changeMind: submission.changeMind,
-          })),
-        }),
-      },
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'noosphere_synthesis',
-        strict: true,
-        schema: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            consensusPoints: { type: 'array', items: { type: 'string' } },
-            dissensusPoints: { type: 'array', items: { type: 'string' } },
-            dominantConclusion: { type: 'string' },
-            minorityViews: { type: 'array', items: { type: 'string' } },
-            summary: { type: 'string' },
-          },
-          required: [
-            'consensusPoints',
-            'dissensusPoints',
-            'dominantConclusion',
-            'minorityViews',
-            'summary',
-          ],
         },
       },
-    },
-  });
+    });
 
-  const parsed = synthesisSchema.parse(JSON.parse(response.output_text));
+    const parsed = synthesisSchema.parse(JSON.parse(response.output_text));
 
-  return {
-    ...parsed,
-    provider: 'openai',
-  };
+    return {
+      ...parsed,
+      provider: 'openai',
+    };
+  } catch (error) {
+    console.warn(
+      `OpenAI synthesis failed, using local fallback instead: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return fallbackSynthesis(question, ranked);
+  }
 }

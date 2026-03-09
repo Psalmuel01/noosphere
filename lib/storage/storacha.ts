@@ -16,6 +16,16 @@ export interface StorageUpload {
   network: StorageNetwork;
 }
 
+async function localFallbackUpload(payload: unknown) {
+  const cid = await createIpfsCid(payload);
+
+  return {
+    cid,
+    gatewayUrl: `ipfs://${cid}`,
+    network: 'local-ipfs' as const,
+  };
+}
+
 function gatewayUrl(cid: string) {
   return `https://storacha.link/ipfs/${cid}`;
 }
@@ -48,13 +58,7 @@ export function getStorachaStatus(): ProviderStatus {
 
 async function uploadJson(fileName: string, payload: unknown, network: StorageNetwork) {
   if (!env.VITE_STORACHA_PROOF || !env.VITE_STORACHA_SPACE_DID) {
-    const cid = await createIpfsCid(payload);
-
-    return {
-      cid,
-      gatewayUrl: `ipfs://${cid}`,
-      network: 'local-ipfs' as const,
-    };
+    return localFallbackUpload(payload);
   }
 
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'noosphere-storacha-'));
@@ -79,7 +83,8 @@ async function uploadJson(fileName: string, payload: unknown, network: StorageNe
         console.warn(result.stderr.trim());
       }
     } catch (error) {
-      throw new Error(formatStorachaError(error));
+      console.warn(formatStorachaError(error));
+      return localFallbackUpload(payload);
     }
 
     const parsed = JSON.parse(stdout) as { cid: string; gatewayUrl?: string | null };

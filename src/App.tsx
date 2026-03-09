@@ -268,12 +268,7 @@ export default function App() {
   }, [activeMetrics, selectedSubmissionId]);
 
   async function handleCreateQuestion() {
-    if (
-      !questionDraft.text.trim() ||
-      !questionDraft.description.trim() ||
-      !questionDraft.creatorName.trim() ||
-      !questionDraft.deadline
-    ) {
+    if (!questionDraft.text.trim() || !questionDraft.description.trim()) {
       return;
     }
 
@@ -530,8 +525,7 @@ export default function App() {
                       </p>
                       <h2 className="text-2xl font-bold">Open a new reasoning session</h2>
                       <p className="text-sm leading-relaxed text-slate-400">
-                        Create a question, set the synthesis deadline, and invite verified humans to
-                        contribute structured reasoning.
+                        Create a question and start collecting structured reasoning immediately.
                       </p>
                     </div>
                     <div className="space-y-4">
@@ -563,7 +557,7 @@ export default function App() {
                               creatorName: event.target.value,
                             }))
                           }
-                          placeholder="Creator name"
+                          placeholder="Creator name (optional)"
                           className="h-12 rounded-xl border border-slate-800 bg-slate-900/70 px-4 text-sm outline-none transition focus:border-primary"
                         />
                         <input
@@ -583,7 +577,7 @@ export default function App() {
                         onChange={(event) =>
                           setQuestionDraft((current) => ({ ...current, tags: event.target.value }))
                         }
-                        placeholder="Tags, comma separated"
+                        placeholder="Tags, comma separated (optional)"
                         className="h-12 w-full rounded-xl border border-slate-800 bg-slate-900/70 px-4 text-sm outline-none transition focus:border-primary"
                       />
                       <button
@@ -707,7 +701,7 @@ export default function App() {
                       className="flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Rocket className="h-4 w-4" />
-                      {isSynthesizing === activeQuestion.id ? 'Synthesizing...' : 'Run Synthesis'}
+                      {isSynthesizing === activeQuestion.id ? 'Aggregating...' : 'Aggregate Reasoning'}
                     </button>
                     {activeMetrics.synthesis && (
                       <button
@@ -730,8 +724,7 @@ export default function App() {
                       Submit Your Reasoning
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                      Every submission must be tied to one verified human and include at least two
-                      structured premises.
+                      Submit a conclusion with one or more supporting premises. Verification is optional for this MVP.
                     </p>
                   </div>
 
@@ -767,7 +760,7 @@ export default function App() {
                           <p className="mt-1 text-sm text-slate-400">
                             {activeVerification
                               ? `Verified via ${activeVerification.mode === 'demo' ? 'demo mode' : 'World ID'}`
-                              : 'Verify before publishing to the graph'}
+                              : 'Optional step for demo identity checks'}
                           </p>
                         </div>
                         {activeVerification && (
@@ -815,7 +808,7 @@ export default function App() {
                         Step 2 · Why?
                       </label>
                       <p className="mt-2 text-sm text-slate-400">
-                        Add at least two reasoning blocks. Claim first, then evidence.
+                        Add one or more reasoning blocks. Claim first, then evidence.
                       </p>
                     </div>
 
@@ -923,7 +916,10 @@ export default function App() {
 
                     <button
                       onClick={() => void handleSubmitReasoning()}
-                      disabled={!activeVerification}
+                      disabled={
+                        !submissionForm.conclusion.trim() ||
+                        submissionForm.premises.filter((premise) => premise.trim()).length === 0
+                      }
                       className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Rocket className="h-4 w-4" />
@@ -1140,6 +1136,131 @@ export default function App() {
                         <Icon className="h-4 w-4" />
                       </button>
                     ))}
+                  </div>
+                </section>
+
+                <section className={`${shellWidthClass} mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(360px,0.7fr)]`}>
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/70 p-6 xl:p-8">
+                    <div className="mb-6 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                          Reasoning Submissions
+                        </p>
+                        <p className="mt-2 text-sm text-slate-400">
+                          Every conclusion and premise submitted for this question.
+                        </p>
+                      </div>
+                      <div className="rounded-full border border-slate-800 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                        {activeMetrics.submissions.length} submissions
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {activeMetrics.submissions.map((submission) => (
+                        <button
+                          key={submission.id}
+                          type="button"
+                          onClick={() => setSelectedSubmissionId(submission.id)}
+                          className={`w-full rounded-2xl border p-5 text-left transition ${
+                            submission.id === activeSubmission?.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-slate-800 bg-slate-900/60 hover:border-primary/40'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-bold text-slate-100">
+                                {submission.contributorName}
+                              </p>
+                              <p className="mt-1 text-lg font-semibold leading-snug text-slate-100">
+                                {submission.conclusion}
+                              </p>
+                            </div>
+                            <div className="rounded-full bg-slate-950 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                              Confidence {submission.confidence}/10
+                            </div>
+                          </div>
+                          <div className="mt-4 space-y-2">
+                            {submission.premises.map((premise, index) => (
+                              <p key={`${submission.id}-${index}`} className="text-sm leading-relaxed text-slate-300">
+                                <span className="mr-2 text-slate-500">{index + 1}.</span>
+                                {premise}
+                              </p>
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/70 p-6 xl:p-8">
+                    <div className="mb-6 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                          AI Aggregation
+                        </p>
+                        <p className="mt-2 text-sm text-slate-400">
+                          Aggregate the submissions into a single synthesis of consensus and disagreement.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => void handleRunSynthesis()}
+                        disabled={activeMetrics.submissions.length < 2 || isSynthesizing === activeQuestion.id}
+                        className="flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Rocket className="h-4 w-4" />
+                        {isSynthesizing === activeQuestion.id ? 'Aggregating...' : 'Aggregate'}
+                      </button>
+                    </div>
+
+                    {activeMetrics.synthesis ? (
+                      <div className="space-y-5">
+                        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+                            Dominant Conclusion
+                          </p>
+                          <p className="mt-3 text-lg font-semibold leading-relaxed text-slate-100">
+                            {activeMetrics.synthesis.dominantConclusion}
+                          </p>
+                        </div>
+
+                        {[
+                          ['Consensus', activeMetrics.synthesis.consensusPoints],
+                          ['Disagreements', activeMetrics.synthesis.dissensusPoints],
+                          ['Minority Views', activeMetrics.synthesis.minorityViews],
+                        ].map(([label, items]) => (
+                          <div key={label} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                              {label}
+                            </p>
+                            <div className="mt-3 space-y-2">
+                              {(items as string[]).length > 0 ? (
+                                (items as string[]).map((item) => (
+                                  <p key={item} className="text-sm leading-relaxed text-slate-300">
+                                    {item}
+                                  </p>
+                                ))
+                              ) : (
+                                <p className="text-sm text-slate-500">No items yet.</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                            Summary
+                          </p>
+                          <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                            {activeMetrics.synthesis.qualityWeightedSummary}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-5 text-sm leading-relaxed text-slate-400">
+                        No aggregation yet. Add at least two reasoning submissions, then click Aggregate.
+                      </div>
+                    )}
                   </div>
                 </section>
               </div>

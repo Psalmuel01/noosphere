@@ -30,15 +30,15 @@ app.use(express.json({ limit: '2mb' }));
 const questionSchema = z.object({
   title: z.string().min(3),
   description: z.string().min(3),
-  creator: z.string().min(1),
-  deadline: z.string(),
-  tags: z.array(z.string()).optional(),
+  creator: z.string().min(1).optional(),
+  deadline: z.string().optional(),
+  tags: z.array(z.string()).optional().default([]),
 });
 
 const submissionSchema = z.object({
-  questionId: z.string().min(1),
-  contributorId: z.string().min(1),
-  contributorName: z.string().min(1),
+  questionId: z.string().min(1).optional(),
+  contributorId: z.string().min(1).optional(),
+  contributorName: z.string().min(1).optional(),
   conclusion: z.string().min(1),
   premises: z.array(z.string().min(1)).min(1),
   confidence: z.number().min(0).max(1),
@@ -55,6 +55,79 @@ const verificationSchema = z.object({
   mode: z.enum(['demo', 'world-id']),
   proof: z.string().nullable().optional(),
 });
+
+function defaultDeadline() {
+  return new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
+}
+
+async function createSubmission(questionId: string, input: z.infer<typeof submissionSchema>) {
+  const question = getQuestion(questionId);
+
+  if (!question) {
+    throw new Error('Question not found.');
+  }
+
+  const contributorName = input.contributorName?.trim() || 'Anonymous';
+  const contributorId = input.contributorId?.trim() || `anon-${crypto.randomUUID().slice(0, 12)}`;
+
+  const features = buildPredictionFeatures({
+    premises: input.premises,
+    confidence: input.confidence,
+    engagementCount: input.engagementCount ?? 0,
+    createdAt: new Date().toISOString(),
+    deadline: question.deadline,
+  });
+
+  const prediction = await predictPersuasion(features);
+  const submissionId = `sub-${crypto.randomUUID()}`;
+  const storage = await uploadReasoningToStoracha(
+    {
+      conclusion: input.conclusion,
+      premises: input.premises,
+      confidence: input.confidence,
+      changeMind: input.changeMind ?? '',
+      reasoningTypes: input.reasoningTypes ?? [],
+      features,
+      persuasionScore: prediction.persuasionScore,
+    },
+    submissionId,
+  );
+
+  const baseSubmission: SubmissionRecord = {
+    id: submissionId,
+    questionId,
+    contributorId,
+    contributorName,
+    conclusion: input.conclusion,
+    premises: input.premises,
+    confidence: input.confidence,
+    changeMind: input.changeMind ?? '',
+    premiseCount: features.premiseCount,
+    avgPremiseLength: features.avgPremiseLength,
+    engagementCount: features.engagementCount,
+    persuasionScore: prediction.persuasionScore,
+    storachaCid: storage.cid,
+    storageGatewayUrl: storage.gatewayUrl,
+    storageNetwork: storage.network,
+    reasoningTypes: input.reasoningTypes ?? [],
+    createdAt: new Date().toISOString(),
+  };
+
+  const allForQuestion = listSubmissions(questionId);
+  const clusterId = clusterIdFor(baseSubmission, allForQuestion);
+  const stored = insertSubmission(baseSubmission);
+
+  return {
+    ...stored,
+    clusterId,
+    keywords: extractKeywords(
+      [stored.conclusion, ...stored.premises, stored.changeMind, ...stored.reasoningTypes],
+      10,
+    ),
+    qualityScore: stored.persuasionScore,
+    storageCid: stored.storachaCid,
+  };
+}
 
 function mapQuestion(question: QuestionRecord) {
   return {
@@ -172,7 +245,13 @@ app.get('/api/questions', async (_req, res) => {
 
 app.post('/api/questions', async (req, res) => {
   const input = questionSchema.parse(req.body);
-  const question = createQuestion(input);
+  const question = createQuestion({
+    title: input.title,
+    description: input.description,
+    creator: input.creator?.trim() || 'Anonymous',
+    deadline: input.deadline || defaultDeadline(),
+    tags: input.tags,
+  });
   res.status(201).json(question);
 });
 
@@ -200,77 +279,52 @@ app.get('/api/questions/:id/submissions', async (req, res) => {
   res.json(session);
 });
 
+app.post('/api/questions/:id/reasoning', async (req, res) => {
+  const input = submissionSchema.parse(req.body);
+
+  try {
+    const submission = await createSubmission(req.params.id, input);
+    res.status(201).json(submission);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Question not found.') {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+
+    throw error;
+  }
+});
+
 app.post('/api/reasoning/submit', async (req, res) => {
   const input = submissionSchema.parse(req.body);
-  const question = getQuestion(input.questionId);
+  if (!input.questionId) {
+    res.status(400).json({ error: 'questionId is required.' });
+    return;
+  }
+
+  try {
+    const submission = await createSubmission(input.questionId, input);
+    res.status(201).json(submission);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Question not found.') {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+
+    throw error;
+  }
+});
+
+app.post('/api/questions/:id/aggregate', async (req, res) => {
+  const question = getQuestion(req.params.id);
 
   if (!question) {
     res.status(404).json({ error: 'Question not found.' });
     return;
   }
 
-  const features = buildPredictionFeatures({
-    premises: input.premises,
-    confidence: input.confidence,
-    engagementCount: input.engagementCount ?? 0,
-    createdAt: new Date().toISOString(),
-    deadline: question.deadline,
-  });
-
-  const prediction = await predictPersuasion(features);
-  const submissionId = `sub-${crypto.randomUUID()}`;
-  const storage = await uploadReasoningToStoracha(
-    {
-      conclusion: input.conclusion,
-      premises: input.premises,
-      confidence: input.confidence,
-      changeMind: input.changeMind ?? '',
-      reasoningTypes: input.reasoningTypes ?? [],
-      features,
-      persuasionScore: prediction.persuasionScore,
-    },
-    submissionId,
-  );
-
-  const baseSubmission: SubmissionRecord = {
-    id: submissionId,
-    questionId: input.questionId,
-    contributorId: input.contributorId,
-    contributorName: input.contributorName,
-    conclusion: input.conclusion,
-    premises: input.premises,
-    confidence: input.confidence,
-    changeMind: input.changeMind ?? '',
-    premiseCount: features.premiseCount,
-    avgPremiseLength: features.avgPremiseLength,
-    engagementCount: features.engagementCount,
-    persuasionScore: prediction.persuasionScore,
-    storachaCid: storage.cid,
-    storageGatewayUrl: storage.gatewayUrl,
-    storageNetwork: storage.network,
-    reasoningTypes: input.reasoningTypes ?? [],
-    createdAt: new Date().toISOString(),
-  };
-
-  const allForQuestion = listSubmissions(input.questionId);
-  const clusterId = clusterIdFor(baseSubmission, allForQuestion);
-
-  const stored = insertSubmission({
-    ...baseSubmission,
-    conclusion: input.conclusion,
-    premises: input.premises,
-  } as SubmissionRecord);
-
-  res.status(201).json({
-    ...stored,
-    clusterId,
-    keywords: extractKeywords(
-      [stored.conclusion, ...stored.premises, stored.changeMind, ...stored.reasoningTypes],
-      10,
-    ),
-    qualityScore: stored.persuasionScore,
-    storageCid: stored.storachaCid,
-  });
+  const synthesis = await synthesizeQuestion(question.id);
+  res.json(synthesis);
 });
 
 app.post('/api/questions/:id/synthesize', async (req, res) => {

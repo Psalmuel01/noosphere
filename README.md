@@ -53,7 +53,7 @@ IMPULSE_API_BASE_URL=
 IMPULSE_API_KEY=
 IMPULSE_MODEL_ID=persuasion_model_v1
 
-WORLD_ID_SIGNING_KEY=sk_xxx
+VITE_RP_SIGNING_KEY=sk_xxx
 
 VITE_STORACHA_PROOF=
 VITE_STORACHA_SPACE_DID=
@@ -81,7 +81,7 @@ Notes:
 For local testing, you can generate a fresh `rp_context` JSON blob with:
 
 ```bash
-VITE_WORLD_ID_RP_ID=rp_xxx WORLD_ID_SIGNING_KEY=sk_xxx npm run world:rp-context -- noosphere-submit-reasoning
+npm run world:rp-context
 ```
 
 This prints the JSON object expected by `VITE_WORLD_ID_RP_CONTEXT_JSON`.
@@ -89,7 +89,7 @@ This prints the JSON object expected by `VITE_WORLD_ID_RP_CONTEXT_JSON`.
 To refresh `.env.local` in place with a new signed context:
 
 ```bash
-VITE_WORLD_ID_RP_ID=rp_xxx WORLD_ID_SIGNING_KEY=sk_xxx npm run world:refresh-env -- noosphere-submit-reasoning
+npm run world:refresh-env
 ```
 
 Restart Vite after refreshing so the new `VITE_` value is loaded.
