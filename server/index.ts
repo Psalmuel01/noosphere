@@ -18,7 +18,7 @@ import {
   upsertVerification,
 } from '../lib/db';
 import { buildPredictionFeatures, getImpulseStatus, predictPersuasion } from '../lib/ai/impulse';
-import { getOpenAIStatus, synthesizeReasoning } from '../lib/ai/synthesis';
+import { getGeminiStatus, synthesizeReasoning } from '../lib/ai/synthesis';
 import { archiveSessionToFilecoin, getFilecoinStatus } from '../lib/archive/filecoin';
 import { getStorachaStatus, uploadReasoningToStoracha } from '../lib/storage/storacha';
 import { BootstrapPayload, QuestionRecord, SubmissionRecord, VerificationRecord } from '../lib/contracts';
@@ -175,7 +175,7 @@ function buildSystemStatus() {
   return {
     storacha: getStorachaStatus(),
     impulse: getImpulseStatus(),
-    openai: getOpenAIStatus(),
+    gemini: getGeminiStatus(),
     filecoin: getFilecoinStatus(),
   };
 }

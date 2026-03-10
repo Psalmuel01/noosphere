@@ -49,7 +49,7 @@ export interface SynthesisRecord {
   dominantConclusion: string;
   minorityViews: string[];
   summary: string;
-  provider: 'openai' | 'local-fallback';
+  provider: 'gemini' | 'local-fallback';
   providerDetail: string;
   filecoinCid: string;
   archiveGatewayUrl: string | null;
@@ -103,7 +103,7 @@ export interface ProviderStatus {
 export interface SystemStatus {
   storacha: ProviderStatus;
   impulse: ProviderStatus;
-  openai: ProviderStatus;
+  gemini: ProviderStatus;
   filecoin: ProviderStatus;
 }
 

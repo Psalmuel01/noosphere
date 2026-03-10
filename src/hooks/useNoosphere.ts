@@ -49,7 +49,7 @@ type ApiSynthesis = {
   dominantConclusion: string;
   minorityViews: string[];
   summary: string;
-  provider: 'openai' | 'local-fallback';
+  provider: 'gemini' | 'local-fallback';
   providerDetail: string;
   filecoinCid: string;
   archiveGatewayUrl: string | null;
@@ -194,7 +194,7 @@ export function useNoosphere() {
   const [backendStatus, setBackendStatus] = useState<BackendStatus>({
     storacha: { ok: false, label: 'Storacha', detail: 'Loading...' },
     impulse: { ok: false, label: 'Impulse AI', detail: 'Loading...' },
-    openai: { ok: false, label: 'OpenAI', detail: 'Loading...' },
+    gemini: { ok: false, label: 'Gemini', detail: 'Loading...' },
     filecoin: { ok: false, label: 'Filecoin', detail: 'Loading...' },
   });
   const [isSynthesizing, setIsSynthesizing] = useState<string | null>(null);

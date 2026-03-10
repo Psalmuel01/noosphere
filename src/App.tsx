@@ -437,7 +437,7 @@ export default function App() {
     });
     addWrappedText(
       `Generated ${new Date(synthesis.generatedAt).toLocaleString()} • ${
-        synthesis.provider === 'openai' ? 'OpenAI synthesis' : 'Local fallback synthesis'
+        synthesis.provider === 'gemini' ? 'Gemini synthesis' : 'Local fallback synthesis'
       }`,
       {
         size: 10,
@@ -564,7 +564,7 @@ export default function App() {
                       </p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
-                      {[backendStatus.impulse, backendStatus.openai, backendStatus.filecoin].map(
+                      {[backendStatus.impulse, backendStatus.gemini, backendStatus.filecoin].map(
                         (status) => (
                           <div
                             key={status.label}
@@ -1290,7 +1290,7 @@ export default function App() {
                       <div className="space-y-5">
                         <div
                           className={`rounded-2xl border p-4 ${
-                            activeMetrics.synthesis.provider === 'openai'
+                            activeMetrics.synthesis.provider === 'gemini'
                               ? 'border-teal-500/30 bg-teal-500/10'
                               : 'border-amber-500/30 bg-amber-500/10'
                           }`}
@@ -1300,8 +1300,8 @@ export default function App() {
                               Aggregation Source
                             </p>
                             <span className="rounded-full bg-slate-950/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-200">
-                              {activeMetrics.synthesis.provider === 'openai'
-                                ? 'OpenAI'
+                              {activeMetrics.synthesis.provider === 'gemini'
+                                ? 'Gemini'
                                 : 'Local fallback'}
                             </span>
                           </div>
@@ -1386,7 +1386,7 @@ export default function App() {
                   </p>
                   <div
                     className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
-                      activeMetrics.synthesis.provider === 'openai'
+                      activeMetrics.synthesis.provider === 'gemini'
                         ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
                         : 'border-amber-500/30 bg-amber-500/10 text-amber-100'
                     }`}

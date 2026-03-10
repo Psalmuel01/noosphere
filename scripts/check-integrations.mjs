@@ -99,21 +99,21 @@ async function checkStoracha() {
   }
 }
 
-async function checkOpenAI() {
-  const apiKey = getEnv('OPENAI_API_KEY');
-  const model = getEnv('OPENAI_MODEL') || 'gpt-4.1-mini';
+async function checkGemini() {
+  const apiKey = getEnv('GEMINI_API_KEY');
+  const model = getEnv('GEMINI_MODEL') || 'gemini-2.5-flash';
 
   if (!apiKey) {
     return {
       ok: false,
-      label: 'OpenAI',
-      detail: 'Missing OPENAI_API_KEY. Local synthesis fallback is active.',
+      label: 'Gemini',
+      detail: 'Missing GEMINI_API_KEY. Local synthesis fallback is active.',
     };
   }
 
   return {
     ok: true,
-    label: 'OpenAI',
+    label: 'Gemini',
     detail: `Configured with model ${model}.`,
   };
 }
@@ -175,7 +175,7 @@ async function checkImpulse() {
 const results = await Promise.all([
   checkWorldId(),
   checkStoracha(),
-  checkOpenAI(),
+  checkGemini(),
   checkImpulse(),
 ]);
 

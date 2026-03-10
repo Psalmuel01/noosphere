@@ -70,7 +70,7 @@ export interface SynthesisOutput {
   dissensusPoints: string[];
   minorityViews: string[];
   qualityWeightedSummary: string;
-  provider: 'openai' | 'local-fallback';
+  provider: 'gemini' | 'local-fallback';
   providerDetail: string;
   archiveCid: string;
   storageNetwork: StorageNetwork;
@@ -121,7 +121,7 @@ export interface IntegrationStatus {
 export interface BackendStatus {
   storacha: IntegrationStatus;
   impulse: IntegrationStatus;
-  openai: IntegrationStatus;
+  gemini: IntegrationStatus;
   filecoin: IntegrationStatus;
 }
 

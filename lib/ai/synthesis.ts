@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import { z } from 'zod';
 import { env } from '../config';
 import { QuestionRecord, SubmissionRecord } from '../contracts';
@@ -44,8 +43,8 @@ const stopwords = new Set([
   'would',
 ]);
 
-export type OpenAISynthesis = z.infer<typeof synthesisSchema> & {
-  provider: 'openai' | 'local-fallback';
+export type GeminiSynthesis = z.infer<typeof synthesisSchema> & {
+  provider: 'gemini' | 'local-fallback';
   providerDetail: string;
 };
 
@@ -161,8 +160,8 @@ function rankedPremises(submissions: SubmissionRecord[], focusTerms: string[]) {
 function fallbackSynthesis(
   question: QuestionRecord,
   submissions: SubmissionRecord[],
-  providerDetail = 'OpenAI unavailable. Generated using local aggregation heuristics.',
-): OpenAISynthesis {
+  providerDetail = 'Gemini unavailable. Generated using local aggregation heuristics.',
+): GeminiSynthesis {
   const ranked = [...submissions].sort((a, b) => b.confidence - a.confidence);
   const clusters = clusterConclusions(ranked);
   const dominantCluster = clusters[0];
@@ -225,35 +224,47 @@ function fallbackSynthesis(
   };
 }
 
-export function getOpenAIStatus() {
-  if (!env.OPENAI_API_KEY) {
+function extractGeminiText(payload: any) {
+  const text = payload?.candidates?.[0]?.content?.parts
+    ?.map((part: { text?: string }) => part.text ?? '')
+    .join('')
+    .trim();
+
+  if (!text) {
+    throw new Error('Gemini response did not include text content.');
+  }
+
+  return text;
+}
+
+export function getGeminiStatus() {
+  if (!env.GEMINI_API_KEY) {
     return {
       ok: false,
-      label: 'OpenAI',
-      detail: 'Missing OPENAI_API_KEY. Local fallback synthesis is active.',
+      label: 'Gemini',
+      detail: 'Missing GEMINI_API_KEY. Local fallback synthesis is active.',
     };
   }
 
   return {
     ok: true,
-    label: 'OpenAI',
-    detail: `Configured with model ${env.OPENAI_MODEL}.`,
+    label: 'Gemini',
+    detail: `Configured with model ${env.GEMINI_MODEL}.`,
   };
 }
 
 export async function synthesizeReasoning(
   question: QuestionRecord,
   submissions: SubmissionRecord[],
-): Promise<OpenAISynthesis> {
+): Promise<GeminiSynthesis> {
   const ranked = [...submissions]
     .sort((a, b) => b.confidence - a.confidence)
     .slice(0, 25);
 
-  if (!env.OPENAI_API_KEY) {
-    return fallbackSynthesis(question, ranked, 'Missing OPENAI_API_KEY. Generated using local aggregation heuristics.');
+  if (!env.GEMINI_API_KEY) {
+    return fallbackSynthesis(question, ranked, 'Missing GEMINI_API_KEY. Generated using local aggregation heuristics.');
   }
 
-  const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
   const formattedSubmissions = ranked
     .map(
       (submission, index) => `${index + 1}.
@@ -268,14 +279,38 @@ Confidence: ${submission.confidence}`,
     .join('\n\n');
 
   try {
-    const response = await client.responses.create({
-      model: env.OPENAI_MODEL,
-      instructions:
-        'You are synthesizing a collective reasoning session. Extract the strongest points of agreement, the key disagreements, the dominant conclusion, minority viewpoints, and write a detailed analytical summary. The summary should read like an intelligent moderator synthesis, not a generic recap. Respond with strict JSON matching the provided schema.',
-      input: [
-        {
-          role: 'user',
-          content: `Question:
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': env.GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `You are synthesizing a collective reasoning session.
+
+Analyze the reasoning submissions and produce:
+1. Key consensus points
+2. Major disagreements
+3. The dominant conclusion
+4. Minority viewpoints
+5. A detailed analytical summary of the collective reasoning
+
+Return strict JSON with this exact shape:
+{
+  "consensusPoints": [],
+  "dissensusPoints": [],
+  "dominantConclusion": "",
+  "minorityViews": [],
+  "summary": ""
+}
+
+Question:
 ${question.title}
 
 Question description:
@@ -284,46 +319,35 @@ ${question.description}
 Reasoning submissions:
 
 ${formattedSubmissions}`,
-        },
-      ],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'noosphere_synthesis',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              consensusPoints: { type: 'array', items: { type: 'string' } },
-              dissensusPoints: { type: 'array', items: { type: 'string' } },
-              dominantConclusion: { type: 'string' },
-              minorityViews: { type: 'array', items: { type: 'string' } },
-              summary: { type: 'string' },
+                },
+              ],
             },
-            required: [
-              'consensusPoints',
-              'dissensusPoints',
-              'dominantConclusion',
-              'minorityViews',
-              'summary',
-            ],
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json',
           },
-        },
+        }),
       },
-    });
+    );
 
-    const parsed = synthesisSchema.parse(JSON.parse(response.output_text));
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Gemini request failed: ${response.status} ${text}`);
+    }
+
+    const payload = await response.json();
+    const parsed = synthesisSchema.parse(JSON.parse(extractGeminiText(payload)));
 
     return {
       ...parsed,
-      provider: 'openai',
-      providerDetail: `Generated with OpenAI model ${env.OPENAI_MODEL}.`,
+      provider: 'gemini',
+      providerDetail: `Generated with Gemini model ${env.GEMINI_MODEL}.`,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
-    console.warn(`OpenAI synthesis failed, using local fallback instead: ${message}`);
-    return fallbackSynthesis(question, ranked, `OpenAI request failed (${message}). Generated using local aggregation heuristics.`);
+    console.warn(`Gemini synthesis failed, using local fallback instead: ${message}`);
+    return fallbackSynthesis(question, ranked, `Gemini request failed (${message}). Generated using local aggregation heuristics.`);
   }
 }
