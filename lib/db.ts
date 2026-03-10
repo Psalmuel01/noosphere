@@ -10,7 +10,7 @@ import {
   SynthesisRecord,
   VerificationInput,
   VerificationRecord,
-} from './contracts';
+} from './models';
 import { seedState } from '../src/data/seed';
 
 const db = new Database(databasePath);

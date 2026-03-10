@@ -7,7 +7,7 @@ Noosphere is a collective reasoning platform with a React frontend and an Expres
 - submit structured reasoning chains with premises, conclusion, and confidence
 - watch reasoning clusters form in a live graph
 - push active submissions through Storacha hot storage when configured
-- score persuasion with Impulse AI
+- score persuasion/quality with Impulse AI
 - synthesize consensus with Gemini
 - archive completed sessions through the Storacha/Filecoin path
 
@@ -20,7 +20,7 @@ Noosphere is a collective reasoning platform with a React frontend and an Expres
 - World ID React SDK for optional verification
 - Storacha client for hot storage uploads and archive publication
 - Gemini API for synthesis
-- Impulse AI prediction API for persuasion scoring (requires inference deployment)
+- Impulse AI inference API for quality scoring (requires deployment)
 - `multiformats` for deterministic local CID fallback
 - `localStorage` for local verification state only
 
@@ -73,8 +73,14 @@ Notes:
 - Public/browser envs use `VITE_*`. Server secrets do not. Do not put Gemini, Impulse, or signing secrets behind `VITE_*`, because that exposes them to the browser.
 - Storacha is used for hot storage and archive publication; archival reaches Filecoin through the Storacha/Filecoin pipeline when the delegation supports it.
 - The backend owns question, submission, and synthesis persistence in `data/noosphere.db`.
+- Predicted quality scores weight synthesis ordering and scale node size in the reasoning graph.
+- Provider request/response payloads are logged on the server console for Storacha, Impulse, and Gemini.
 - Official World ID verification still requires a signed RP context.
 - The fallback path is intentional so development can continue without every provider key.
+
+## Roadmap
+
+See [plan.md](/Users/sam/Desktop/Projects/NooSphere/plan.md) for next steps and remaining work.
 
 ## Generate World RP Context
 

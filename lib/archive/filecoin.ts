@@ -1,5 +1,5 @@
 import { env } from '../config';
-import { ProviderStatus } from '../contracts';
+import { ProviderStatus } from '../models';
 import { uploadArchiveArtifact } from '../storage/storacha';
 
 export function getFilecoinStatus(): ProviderStatus {

@@ -5,7 +5,7 @@ import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createIpfsCid } from '../../src/lib/cid';
 import { env } from '../config';
-import { ProviderStatus, StorageNetwork } from '../contracts';
+import { ProviderStatus, StorageNetwork } from '../models';
 
 const execFile = promisify(execFileCallback);
 const uploadScriptPath = path.resolve(process.cwd(), 'scripts/storacha-upload.mjs');
@@ -18,6 +18,7 @@ export interface StorageUpload {
 
 async function localFallbackUpload(payload: unknown) {
   const cid = await createIpfsCid(payload);
+  console.log('[Storacha] Local CID fallback', { cid, payload });
 
   return {
     cid,
@@ -58,6 +59,7 @@ export function getStorachaStatus(): ProviderStatus {
 
 async function uploadJson(fileName: string, payload: unknown, network: StorageNetwork) {
   if (!env.VITE_STORACHA_PROOF || !env.VITE_STORACHA_SPACE_DID) {
+    console.log('[Storacha] Upload requested (fallback)', { fileName, network, payload });
     return localFallbackUpload(payload);
   }
 
@@ -65,6 +67,7 @@ async function uploadJson(fileName: string, payload: unknown, network: StorageNe
   const payloadPath = path.join(tempDir, fileName);
 
   try {
+    console.log('[Storacha] Upload requested', { fileName, network, payload });
     await fs.writeFile(payloadPath, JSON.stringify(payload, null, 2), 'utf8');
     let stdout = '';
 
@@ -89,11 +92,14 @@ async function uploadJson(fileName: string, payload: unknown, network: StorageNe
 
     const parsed = JSON.parse(stdout) as { cid: string; gatewayUrl?: string | null };
 
-    return {
+    const result = {
       cid: parsed.cid,
       gatewayUrl: parsed.gatewayUrl ?? gatewayUrl(parsed.cid),
       network,
     };
+
+    console.log('[Storacha] Upload response', result);
+    return result;
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
   }

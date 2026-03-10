@@ -168,6 +168,10 @@ function buildBootstrappedState(payload: BootstrapResponse): BootstrappedState {
 }
 
 async function request<T>(input: string, init?: RequestInit) {
+  const method = init?.method ?? 'GET';
+  const body = init?.body;
+  console.log('[API] Request', { method, input, body });
+
   const response = await fetch(input, {
     headers: {
       'Content-Type': 'application/json',
@@ -178,10 +182,13 @@ async function request<T>(input: string, init?: RequestInit) {
 
   if (!response.ok) {
     const payload = await response.text();
+    console.log('[API] Response', { method, input, status: response.status, payload });
     throw new Error(payload || `${response.status} ${response.statusText}`);
   }
 
-  return (await response.json()) as T;
+  const data = (await response.json()) as T;
+  console.log('[API] Response', { method, input, status: response.status, data });
+  return data;
 }
 
 export function useNoosphere() {

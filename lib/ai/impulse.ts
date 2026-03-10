@@ -1,5 +1,5 @@
 import { env } from '../config';
-import { PredictionFeatures } from '../contracts';
+import { PredictionFeatures } from '../models';
 
 export interface ImpulsePrediction {
   persuasionScore: number;
@@ -151,6 +151,10 @@ export async function predictPersuasion(features: PredictionFeatures): Promise<I
     !env.IMPULSE_INFERENCE_BASE_URL ||
     !env.IMPULSE_DEPLOYMENT_ID
   ) {
+    console.log('[Impulse] Using local fallback scoring', {
+      reason: 'Missing IMPULSE_API_KEY, IMPULSE_INFERENCE_BASE_URL, or IMPULSE_DEPLOYMENT_ID.',
+      features,
+    });
     return {
       persuasionScore: fallbackPersuasionScore(features),
       provider: 'local-fallback',
@@ -159,22 +163,26 @@ export async function predictPersuasion(features: PredictionFeatures): Promise<I
   }
 
   try {
+    const requestBody = {
+      deployment_id: env.IMPULSE_DEPLOYMENT_ID,
+      inputs: {
+        confidence: features.confidence,
+        premise_count: features.premiseCount,
+        has_change_mind: features.hasChangeMind,
+        conclusion_length: features.conclusionLength,
+        avg_premise_length: features.avgPremiseLength,
+      },
+    };
+
+    console.log('[Impulse] Inference request', requestBody);
+
     const response = await fetch(`${env.IMPULSE_INFERENCE_BASE_URL.replace(/\/$/, '')}/infer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${env.IMPULSE_API_KEY}`,
       },
-      body: JSON.stringify({
-        deployment_id: env.IMPULSE_DEPLOYMENT_ID,
-        inputs: {
-          confidence: features.confidence,
-          premise_count: features.premiseCount,
-          has_change_mind: features.hasChangeMind,
-          conclusion_length: features.conclusionLength,
-          avg_premise_length: features.avgPremiseLength,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -188,6 +196,7 @@ export async function predictPersuasion(features: PredictionFeatures): Promise<I
       quality_score?: number;
       output?: number | { quality_score?: number; score?: number };
     };
+    console.log('[Impulse] Inference response', payload);
     const nestedPrediction =
       typeof payload.prediction === 'object' && payload.prediction
         ? payload.prediction.quality_score ?? payload.prediction.score

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { env } from '../config';
-import { QuestionRecord, SubmissionRecord } from '../contracts';
+import { QuestionRecord, SubmissionRecord } from '../models';
 
 const synthesisSchema = z.object({
   consensusPoints: z.array(z.string()).default([]),
@@ -258,10 +258,15 @@ export async function synthesizeReasoning(
   submissions: SubmissionRecord[],
 ): Promise<GeminiSynthesis> {
   const ranked = [...submissions]
-    .sort((a, b) => b.confidence - a.confidence)
+    .sort((a, b) => b.persuasionScore - a.persuasionScore)
     .slice(0, 25);
 
   if (!env.GEMINI_API_KEY) {
+    console.log('[Gemini] Using local fallback synthesis', {
+      reason: 'Missing GEMINI_API_KEY.',
+      question,
+      submissions: ranked,
+    });
     return fallbackSynthesis(question, ranked, 'Missing GEMINI_API_KEY. Generated using local aggregation heuristics.');
   }
 
@@ -274,25 +279,18 @@ ${submission.conclusion}
 Premises:
 ${submission.premises.map((premise, premiseIndex) => `${premiseIndex + 1}. ${premise}`).join('\n')}
 
+Quality score: ${submission.persuasionScore}
 Confidence: ${submission.confidence}`,
     )
     .join('\n\n');
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': env.GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [
+    const requestBody = {
+      contents: [
+        {
+          parts: [
             {
-              parts: [
-                {
-                  text: `You are synthesizing a collective reasoning session.
+              text: `You are synthesizing a collective reasoning session.
 
 Analyze the reasoning submissions and produce:
 1. Key consensus points
@@ -319,15 +317,27 @@ ${question.description}
 Reasoning submissions:
 
 ${formattedSubmissions}`,
-                },
-              ],
             },
           ],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-          },
-        }),
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: 'application/json',
+      },
+    };
+
+    console.log('[Gemini] Synthesis request', requestBody);
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': env.GEMINI_API_KEY,
+        },
+        body: JSON.stringify(requestBody),
       },
     );
 
@@ -337,7 +347,9 @@ ${formattedSubmissions}`,
     }
 
     const payload = await response.json();
+    console.log('[Gemini] Synthesis response', payload);
     const parsed = synthesisSchema.parse(JSON.parse(extractGeminiText(payload)));
+    console.log('[Gemini] Synthesis parsed', parsed);
 
     return {
       ...parsed,

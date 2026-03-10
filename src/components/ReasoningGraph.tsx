@@ -17,6 +17,7 @@ type GraphNodeData = {
   submission: ReasoningSubmission;
   label: string;
   color: string;
+  scale: number;
 };
 
 type GraphNode = Node<GraphNodeData, 'reasoning'>;
@@ -33,6 +34,8 @@ function ReasoningNode({ data, selected }: NodeProps<GraphNode>) {
       }`}
       style={{
         boxShadow: selected ? `0 0 30px ${data.color}22` : undefined,
+        transform: `scale(${data.scale})`,
+        transformOrigin: 'center',
       }}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -84,6 +87,8 @@ function buildGraph(submissions: ReasoningSubmission[]) {
     const label = clusterLabelFromKeywords(clusterSubmissions[0]?.keywords ?? [clusterId]);
 
     return clusterSubmissions.map((submission, nodeIndex) => {
+      const normalizedScore = Math.max(0, Math.min(1, submission.qualityScore));
+      const scale = 0.85 + normalizedScore * 0.5;
       const radius = 110 + (nodeIndex % 3) * 34;
       const localAngle = angle + (Math.PI * 2 * nodeIndex) / Math.max(clusterSubmissions.length, 1);
 
@@ -98,6 +103,7 @@ function buildGraph(submissions: ReasoningSubmission[]) {
           submission,
           label,
           color,
+          scale,
         },
       };
     });
