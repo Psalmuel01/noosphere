@@ -1435,7 +1435,7 @@ export default function App() {
                     {activeMetrics.synthesis.qualityWeightedSummary}
                   </p> */}
                   <div
-                    className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
+                    className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-xs leading-relaxed ${
                       activeMetrics.synthesis.provider === 'gemini'
                         ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
                         : 'border-amber-500/30 bg-amber-500/10 text-amber-100'

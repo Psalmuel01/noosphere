@@ -17,12 +17,10 @@ Noosphere is a collective reasoning platform with a React frontend and an Expres
 - Express 5 + SQLite (`better-sqlite3`)
 - Tailwind CSS v4
 - React Flow for the reasoning graph
-- World ID React SDK for optional verification
+- World ID React SDK for human verification
 - Storacha client for hot storage uploads and archive publication
 - Gemini API for synthesis
 - Impulse AI inference API for quality scoring (requires deployment)
-- `multiformats` for deterministic local CID fallback
-- `localStorage` for local verification state only
 
 ## Run locally
 
