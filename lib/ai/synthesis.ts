@@ -262,11 +262,6 @@ export async function synthesizeReasoning(
     .slice(0, 25);
 
   if (!env.GEMINI_API_KEY) {
-    console.log('[Gemini] Using local fallback synthesis', {
-      reason: 'Missing GEMINI_API_KEY.',
-      question,
-      submissions: ranked,
-    });
     return fallbackSynthesis(question, ranked, 'Missing GEMINI_API_KEY. Generated using local aggregation heuristics.');
   }
 
@@ -327,8 +322,6 @@ ${formattedSubmissions}`,
       },
     };
 
-    console.log('[Gemini] Synthesis request', requestBody);
-
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`,
       {
@@ -347,9 +340,7 @@ ${formattedSubmissions}`,
     }
 
     const payload = await response.json();
-    console.log('[Gemini] Synthesis response', payload);
     const parsed = synthesisSchema.parse(JSON.parse(extractGeminiText(payload)));
-    console.log('[Gemini] Synthesis parsed', parsed);
 
     return {
       ...parsed,

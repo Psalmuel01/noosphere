@@ -1230,7 +1230,7 @@ export default function App() {
                   </aside>
                 </div>
 
-                <section className={`${shellWidthClass} relative mt-6 min-h-[520px] overflow-hidden rounded-3xl border border-slate-800 bg-background-dark px-4 py-4 md:px-6 md:py-6`}>
+                <section className={`${shellWidthClass} relative mt-6 h-[560px] overflow-hidden rounded-3xl border border-slate-800 bg-background-dark px-4 py-4 md:h-[640px] md:px-6 md:py-6`}>
                   <Suspense fallback={<GraphFallback />}>
                     <ReasoningGraph
                       submissions={activeMetrics.submissions}
@@ -1251,16 +1251,6 @@ export default function App() {
                       <span className="h-3 w-3 rounded-full bg-amber-400" />
                       Dissent cluster
                     </span>
-                  </div>
-                  <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-                    {[Plus, Minus, Focus].map((Icon, index) => (
-                      <button
-                        key={index}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-950/90 text-slate-400 shadow-sm transition hover:border-primary hover:text-primary"
-                      >
-                        <Icon className="h-4 w-4" />
-                      </button>
-                    ))}
                   </div>
                 </section>
 

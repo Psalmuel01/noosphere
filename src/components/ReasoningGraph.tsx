@@ -162,35 +162,42 @@ export function ReasoningGraph({
   }
 
   return (
-    <ReactFlow
-      fitView
-      minZoom={0.4}
-      maxZoom={1.8}
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      nodesDraggable={false}
-      elementsSelectable
-      onNodeClick={(_, node) => onSelectSubmission(node.id)}
-      defaultEdgeOptions={{ type: 'smoothstep' }}
-      className="bg-transparent"
-    >
-      <MiniMap
-        pannable
-        zoomable
-        nodeStrokeColor={(node) => {
-          if (node.id === selectedSubmissionId) {
-            return '#f8fafc';
-          }
+    <div className="h-full w-full">
+      <ReactFlow
+        fitView
+        minZoom={0.4}
+        maxZoom={1.8}
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        nodesDraggable={false}
+        elementsSelectable
+        onNodeClick={(_, node) => onSelectSubmission(node.id)}
+        defaultEdgeOptions={{ type: 'smoothstep' }}
+        className="bg-transparent"
+        style={{ width: '100%', height: '100%' }}
+      >
+        <MiniMap
+          pannable
+          zoomable
+          nodeStrokeColor={(node) => {
+            if (node.id === selectedSubmissionId) {
+              return '#f8fafc';
+            }
 
-          return (node.data as GraphNodeData).color;
-        }}
-        nodeColor={(node) => `${(node.data as GraphNodeData).color}88`}
-        maskColor="#02061788"
-        position="top-right"
+            return (node.data as GraphNodeData).color;
+          }}
+          nodeColor={(node) => `${(node.data as GraphNodeData).color}88`}
+          maskColor="#02061788"
+          position="top-right"
+        />
+      <Controls
+        position="bottom-right"
+        className="!border-0 !bg-transparent !shadow-none"
+        showInteractive={false}
       />
-      <Controls className="!border-slate-800 !bg-slate-950/90 !text-slate-200" showInteractive={false} />
-      <Background color="#334155" gap={24} variant={BackgroundVariant.Dots} />
-    </ReactFlow>
+        <Background color="#334155" gap={24} variant={BackgroundVariant.Dots} />
+      </ReactFlow>
+    </div>
   );
 }

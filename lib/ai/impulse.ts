@@ -151,10 +151,6 @@ export async function predictPersuasion(features: PredictionFeatures): Promise<I
     !env.IMPULSE_INFERENCE_BASE_URL ||
     !env.IMPULSE_DEPLOYMENT_ID
   ) {
-    console.log('[Impulse] Using local fallback scoring', {
-      reason: 'Missing IMPULSE_API_KEY, IMPULSE_INFERENCE_BASE_URL, or IMPULSE_DEPLOYMENT_ID.',
-      features,
-    });
     return {
       persuasionScore: fallbackPersuasionScore(features),
       provider: 'local-fallback',
@@ -173,8 +169,6 @@ export async function predictPersuasion(features: PredictionFeatures): Promise<I
         avg_premise_length: features.avgPremiseLength,
       },
     };
-
-    console.log('[Impulse] Inference request', requestBody);
 
     const response = await fetch(`${env.IMPULSE_INFERENCE_BASE_URL.replace(/\/$/, '')}/infer`, {
       method: 'POST',
@@ -196,7 +190,6 @@ export async function predictPersuasion(features: PredictionFeatures): Promise<I
       quality_score?: number;
       output?: number | { quality_score?: number; score?: number };
     };
-    console.log('[Impulse] Inference response', payload);
     const nestedPrediction =
       typeof payload.prediction === 'object' && payload.prediction
         ? payload.prediction.quality_score ?? payload.prediction.score

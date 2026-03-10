@@ -26,31 +26,6 @@ import { extractKeywords, keywordSimilarity } from '../src/lib/scoring';
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
-app.use((req, res, next) => {
-  if (!req.path.startsWith('/api')) {
-    return next();
-  }
-
-  console.log('[API] Request', {
-    method: req.method,
-    path: req.path,
-    query: req.query,
-    body: req.body,
-  });
-
-  const originalJson = res.json.bind(res);
-  res.json = ((payload: unknown) => {
-    console.log('[API] Response', {
-      method: req.method,
-      path: req.path,
-      status: res.statusCode,
-      payload,
-    });
-    return originalJson(payload);
-  }) as typeof res.json;
-
-  return next();
-});
 
 const questionSchema = z.object({
   title: z.string().min(3),

@@ -18,8 +18,6 @@ export interface StorageUpload {
 
 async function localFallbackUpload(payload: unknown) {
   const cid = await createIpfsCid(payload);
-  console.log('[Storacha] Local CID fallback', { cid, payload });
-
   return {
     cid,
     gatewayUrl: `ipfs://${cid}`,
@@ -59,7 +57,6 @@ export function getStorachaStatus(): ProviderStatus {
 
 async function uploadJson(fileName: string, payload: unknown, network: StorageNetwork) {
   if (!env.VITE_STORACHA_PROOF || !env.VITE_STORACHA_SPACE_DID) {
-    console.log('[Storacha] Upload requested (fallback)', { fileName, network, payload });
     return localFallbackUpload(payload);
   }
 
@@ -67,7 +64,6 @@ async function uploadJson(fileName: string, payload: unknown, network: StorageNe
   const payloadPath = path.join(tempDir, fileName);
 
   try {
-    console.log('[Storacha] Upload requested', { fileName, network, payload });
     await fs.writeFile(payloadPath, JSON.stringify(payload, null, 2), 'utf8');
     let stdout = '';
 
@@ -98,7 +94,6 @@ async function uploadJson(fileName: string, payload: unknown, network: StorageNe
       network,
     };
 
-    console.log('[Storacha] Upload response', result);
     return result;
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
