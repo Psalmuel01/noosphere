@@ -73,6 +73,8 @@ async function createSubmission(questionId: string, input: z.infer<typeof submis
   const features = buildPredictionFeatures({
     premises: input.premises,
     confidence: input.confidence,
+    conclusion: input.conclusion,
+    changeMind: input.changeMind,
     engagementCount: input.engagementCount ?? 0,
     createdAt: new Date().toISOString(),
     deadline: question.deadline,

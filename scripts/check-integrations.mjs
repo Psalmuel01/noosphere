@@ -119,57 +119,38 @@ async function checkGemini() {
 }
 
 async function checkImpulse() {
-  const baseUrl = getEnv('IMPULSE_API_BASE_URL');
+  const baseUrl = getEnv('IMPULSE_INFERENCE_BASE_URL');
   const apiKey = getEnv('IMPULSE_API_KEY');
-  const modelId = getEnv('IMPULSE_MODEL_ID') || 'persuasion_model_v1';
+  const deploymentId = getEnv('IMPULSE_DEPLOYMENT_ID');
+  const trainingBaseUrl = getEnv('IMPULSE_API_BASE_URL');
 
-  if (!baseUrl || !apiKey) {
+  if (!apiKey) {
     return {
       ok: false,
       label: 'Impulse AI',
-      detail: 'Missing IMPULSE_API_BASE_URL or IMPULSE_API_KEY. Local scoring fallback is active.',
+      detail: 'Missing IMPULSE_API_KEY. Local scoring fallback is active.',
     };
   }
 
-  try {
-    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/predict`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        modelId,
-        premiseCount: 2,
-        avgPremiseLength: 120,
-        confidence: 0.65,
-        engagementCount: 1,
-      }),
-    });
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        label: 'Impulse AI',
-        detail: `Prediction probe failed with ${response.status}.`,
-      };
+  if (!baseUrl || !deploymentId) {
+    const detailParts = [
+      'Missing IMPULSE_INFERENCE_BASE_URL or IMPULSE_DEPLOYMENT_ID. Local scoring fallback is active.',
+    ];
+    if (trainingBaseUrl) {
+      detailParts.push(`Training base URL set (${trainingBaseUrl}).`);
     }
-
-    return {
-      ok: true,
-      label: 'Impulse AI',
-      detail: `Prediction API reachable at ${baseUrl}.`,
-    };
-  } catch (error) {
     return {
       ok: false,
       label: 'Impulse AI',
-      detail:
-        error instanceof Error
-          ? error.message
-          : 'Prediction probe failed for an unknown reason.',
+      detail: detailParts.join(' '),
     };
   }
+
+  return {
+    ok: true,
+    label: 'Impulse AI',
+    detail: `Inference configuration present for deployment ${deploymentId} at ${baseUrl}.`,
+  };
 }
 
 const results = await Promise.all([

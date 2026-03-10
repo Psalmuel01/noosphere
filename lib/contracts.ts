@@ -89,6 +89,8 @@ export interface PredictionFeatures {
   premiseCount: number;
   avgPremiseLength: number;
   confidence: number;
+  conclusionLength: number;
+  hasChangeMind: boolean;
   engagementCount: number;
   timeInSession?: number;
   mindChanged?: number;

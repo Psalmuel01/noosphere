@@ -14,9 +14,10 @@ const envSchema = z.object({
     .transform((value) => value === 'true'),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  IMPULSE_INFERENCE_BASE_URL: z.string().optional(),
   IMPULSE_API_BASE_URL: z.string().optional(),
   IMPULSE_API_KEY: z.string().optional(),
-  IMPULSE_MODEL_ID: z.string().default('persuasion_model_v1'),
+  IMPULSE_DEPLOYMENT_ID: z.string().optional(),
   VITE_STORACHA_PROOF: z.string().optional(),
   VITE_STORACHA_SPACE_DID: z.string().optional(),
 });

@@ -20,7 +20,7 @@ Noosphere is a collective reasoning platform with a React frontend and an Expres
 - World ID React SDK for optional verification
 - Storacha client for hot storage uploads and archive publication
 - Gemini API for synthesis
-- Impulse AI prediction API for persuasion scoring
+- Impulse AI prediction API for persuasion scoring (requires inference deployment)
 - `multiformats` for deterministic local CID fallback
 - `localStorage` for local verification state only
 
@@ -39,7 +39,7 @@ The app is still usable without provider keys:
 
 - World ID falls back to demo verification
 - Storacha falls back to deterministic local CIDs
-- Impulse AI falls back to local scoring heuristics
+- Impulse AI falls back to local scoring heuristics until inference is configured
 - Gemini falls back to local synthesis heuristics
 
 Backend and AI envs:
@@ -50,9 +50,10 @@ NOOSPHERE_ENABLE_DEMO_SEED=false
 VITE_RP_SIGNING_KEY=sk_xxx
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
-IMPULSE_API_BASE_URL=
+IMPULSE_API_BASE_URL=https://api.impulselabs.ai
+IMPULSE_INFERENCE_BASE_URL=https://inference.impulselabs.ai
 IMPULSE_API_KEY=
-IMPULSE_MODEL_ID=persuasion_model_v1
+IMPULSE_DEPLOYMENT_ID=
 
 VITE_STORACHA_PROOF=
 VITE_STORACHA_SPACE_DID=
