@@ -56,6 +56,8 @@ db.exec(`
     dominant_conclusion TEXT NOT NULL,
     minority_views_json TEXT NOT NULL,
     summary TEXT NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'local-fallback',
+    provider_detail TEXT NOT NULL DEFAULT '',
     filecoin_cid TEXT NOT NULL,
     archive_gateway_url TEXT,
     created_at TEXT NOT NULL,
@@ -74,6 +76,14 @@ db.exec(`
     FOREIGN KEY(question_id) REFERENCES questions(id)
   );
 `);
+
+const synthesisColumns = db.prepare(`PRAGMA table_info(syntheses)`).all() as Array<{ name: string }>;
+if (!synthesisColumns.some((column) => column.name === 'provider')) {
+  db.exec(`ALTER TABLE syntheses ADD COLUMN provider TEXT NOT NULL DEFAULT 'local-fallback';`);
+}
+if (!synthesisColumns.some((column) => column.name === 'provider_detail')) {
+  db.exec(`ALTER TABLE syntheses ADD COLUMN provider_detail TEXT NOT NULL DEFAULT '';`);
+}
 
 function parseQuestionRow(row: any): QuestionRecord {
   return {
@@ -118,6 +128,8 @@ function parseSynthesisRow(row: any): SynthesisRecord {
     dominantConclusion: row.dominant_conclusion,
     minorityViews: JSON.parse(row.minority_views_json),
     summary: row.summary,
+    provider: row.provider ?? 'local-fallback',
+    providerDetail: row.provider_detail ?? '',
     filecoinCid: row.filecoin_cid,
     archiveGatewayUrl: row.archive_gateway_url ?? null,
     createdAt: row.created_at,
@@ -173,10 +185,10 @@ function seedDatabase() {
   const insertSynthesis = db.prepare(`
     INSERT INTO syntheses (
       question_id, consensus_points_json, dissensus_points_json, dominant_conclusion,
-      minority_views_json, summary, filecoin_cid, archive_gateway_url, created_at
+      minority_views_json, summary, provider, provider_detail, filecoin_cid, archive_gateway_url, created_at
     ) VALUES (
       @questionId, @consensusPointsJson, @dissensusPointsJson, @dominantConclusion,
-      @minorityViewsJson, @summary, @filecoinCid, @archiveGatewayUrl, @createdAt
+      @minorityViewsJson, @summary, @provider, @providerDetail, @filecoinCid, @archiveGatewayUrl, @createdAt
     )
   `);
   const insertVerification = db.prepare(`
@@ -233,6 +245,8 @@ function seedDatabase() {
         dominantConclusion: synthesis.dominantConclusion,
         minorityViewsJson: JSON.stringify(synthesis.minorityViews),
         summary: synthesis.qualityWeightedSummary,
+        provider: synthesis.provider ?? 'local-fallback',
+        providerDetail: synthesis.providerDetail ?? 'Seeded demo synthesis.',
         filecoinCid: synthesis.archiveCid,
         archiveGatewayUrl: synthesis.archiveGatewayUrl,
         createdAt: synthesis.generatedAt,
@@ -386,10 +400,10 @@ export function upsertSynthesis(record: SynthesisRecord) {
   db.prepare(`
     INSERT INTO syntheses (
       question_id, consensus_points_json, dissensus_points_json, dominant_conclusion,
-      minority_views_json, summary, filecoin_cid, archive_gateway_url, created_at
+      minority_views_json, summary, provider, provider_detail, filecoin_cid, archive_gateway_url, created_at
     ) VALUES (
       @questionId, @consensusPointsJson, @dissensusPointsJson, @dominantConclusion,
-      @minorityViewsJson, @summary, @filecoinCid, @archiveGatewayUrl, @createdAt
+      @minorityViewsJson, @summary, @provider, @providerDetail, @filecoinCid, @archiveGatewayUrl, @createdAt
     )
     ON CONFLICT(question_id) DO UPDATE SET
       consensus_points_json=excluded.consensus_points_json,
@@ -397,6 +411,8 @@ export function upsertSynthesis(record: SynthesisRecord) {
       dominant_conclusion=excluded.dominant_conclusion,
       minority_views_json=excluded.minority_views_json,
       summary=excluded.summary,
+      provider=excluded.provider,
+      provider_detail=excluded.provider_detail,
       filecoin_cid=excluded.filecoin_cid,
       archive_gateway_url=excluded.archive_gateway_url,
       created_at=excluded.created_at
@@ -407,6 +423,8 @@ export function upsertSynthesis(record: SynthesisRecord) {
     dominantConclusion: record.dominantConclusion,
     minorityViewsJson: JSON.stringify(record.minorityViews),
     summary: record.summary,
+    provider: record.provider,
+    providerDetail: record.providerDetail,
     filecoinCid: record.filecoinCid,
     archiveGatewayUrl: record.archiveGatewayUrl,
     createdAt: record.createdAt,

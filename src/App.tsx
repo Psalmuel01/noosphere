@@ -28,6 +28,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { jsPDF } from 'jspdf';
 import { HeroCanvas } from './components/HeroCanvas';
 import { useNoosphere } from './hooks/useNoosphere';
 import {
@@ -352,35 +353,107 @@ export default function App() {
   }
 
   function handleDownloadSynthesis(synthesis: SynthesisOutput, question: Question) {
-    const markdown = [
-      `# ${question.text}`,
-      '',
-      `Generated: ${new Date(synthesis.generatedAt).toLocaleString()}`,
-      `Archive CID: ${synthesis.archiveCid}`,
-      '',
-      '## Dominant Conclusion',
-      synthesis.dominantConclusion,
-      '',
-      '## Consensus Points',
-      ...synthesis.consensusPoints.map((point) => `- ${point}`),
-      '',
-      '## Dissent',
-      ...synthesis.dissensusPoints.map((point) => `- ${point}`),
-      '',
-      '## Minority Views',
-      ...synthesis.minorityViews.map((point) => `- ${point}`),
-      '',
-      '## Summary',
-      synthesis.qualityWeightedSummary,
-    ].join('\n');
+    const doc = new jsPDF({
+      unit: 'pt',
+      format: 'a4',
+    });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
 
-    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${question.id}-synthesis.md`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const ensureSpace = (height = 24) => {
+      if (y + height <= pageHeight - margin) {
+        return;
+      }
+
+      doc.addPage();
+      y = margin;
+    };
+
+    const addWrappedText = (
+      text: string,
+      options: { size?: number; color?: [number, number, number]; weight?: 'normal' | 'bold'; gap?: number } = {},
+    ) => {
+      const size = options.size ?? 11;
+      const gap = options.gap ?? 16;
+
+      doc.setFont('helvetica', options.weight === 'bold' ? 'bold' : 'normal');
+      doc.setFontSize(size);
+      if (options.color) {
+        doc.setTextColor(...options.color);
+      } else {
+        doc.setTextColor(24, 24, 27);
+      }
+
+      const lines = doc.splitTextToSize(text, contentWidth);
+      const lineHeight = size * 1.45;
+      ensureSpace(lines.length * lineHeight + gap);
+      doc.text(lines, margin, y);
+      y += lines.length * lineHeight + gap;
+    };
+
+    const addSection = (title: string, items: string[] | string) => {
+      addWrappedText(title, {
+        size: 10,
+        color: [79, 70, 229],
+        weight: 'bold',
+        gap: 10,
+      });
+
+      if (Array.isArray(items)) {
+        if (items.length === 0) {
+          addWrappedText('None recorded.', { size: 11, color: [82, 82, 91] });
+          return;
+        }
+
+        items.forEach((item) => {
+          addWrappedText(`• ${item}`, { size: 11, color: [39, 39, 42], gap: 10 });
+        });
+        y += 6;
+        return;
+      }
+
+      addWrappedText(items, { size: 11, color: [39, 39, 42] });
+    };
+
+    addWrappedText('NOOSPHERE SYNTHESIS REPORT', {
+      size: 12,
+      color: [79, 70, 229],
+      weight: 'bold',
+      gap: 12,
+    });
+    addWrappedText(question.text, {
+      size: 22,
+      color: [15, 23, 42],
+      weight: 'bold',
+      gap: 14,
+    });
+    addWrappedText(question.description, {
+      size: 12,
+      color: [71, 85, 105],
+      gap: 18,
+    });
+    addWrappedText(
+      `Generated ${new Date(synthesis.generatedAt).toLocaleString()} • ${
+        synthesis.provider === 'openai' ? 'OpenAI synthesis' : 'Local fallback synthesis'
+      }`,
+      {
+        size: 10,
+        color: [100, 116, 139],
+        gap: 20,
+      },
+    );
+    addSection('Dominant Conclusion', synthesis.dominantConclusion);
+    addSection('Consensus', synthesis.consensusPoints);
+    addSection('Disagreements', synthesis.dissensusPoints);
+    addSection('Minority Views', synthesis.minorityViews);
+    addSection('Summary', synthesis.qualityWeightedSummary);
+    addSection('Generation Notes', synthesis.providerDetail);
+    addSection('Archive CID', synthesis.archiveCid);
+
+    doc.save(`${question.id}-synthesis-report.pdf`);
   }
 
   return (
@@ -1215,6 +1288,28 @@ export default function App() {
 
                     {activeMetrics.synthesis ? (
                       <div className="space-y-5">
+                        <div
+                          className={`rounded-2xl border p-4 ${
+                            activeMetrics.synthesis.provider === 'openai'
+                              ? 'border-teal-500/30 bg-teal-500/10'
+                              : 'border-amber-500/30 bg-amber-500/10'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-200">
+                              Aggregation Source
+                            </p>
+                            <span className="rounded-full bg-slate-950/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-200">
+                              {activeMetrics.synthesis.provider === 'openai'
+                                ? 'OpenAI'
+                                : 'Local fallback'}
+                            </span>
+                          </div>
+                          <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                            {activeMetrics.synthesis.providerDetail}
+                          </p>
+                        </div>
+
                         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
                           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
                             Dominant Conclusion
@@ -1289,6 +1384,15 @@ export default function App() {
                   <p className="max-w-3xl text-sm leading-relaxed text-slate-400">
                     {activeMetrics.synthesis.qualityWeightedSummary}
                   </p>
+                  <div
+                    className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
+                      activeMetrics.synthesis.provider === 'openai'
+                        ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
+                        : 'border-amber-500/30 bg-amber-500/10 text-amber-100'
+                    }`}
+                  >
+                    {activeMetrics.synthesis.providerDetail}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <button

@@ -229,6 +229,8 @@ async function synthesizeQuestion(questionId: string) {
     dominantConclusion: synthesis.dominantConclusion,
     minorityViews: synthesis.minorityViews,
     summary: synthesis.summary,
+    provider: synthesis.provider,
+    providerDetail: synthesis.providerDetail,
     filecoinCid: archive.cid,
     archiveGatewayUrl: archive.gatewayUrl,
     createdAt: new Date().toISOString(),

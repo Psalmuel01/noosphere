@@ -49,6 +49,8 @@ type ApiSynthesis = {
   dominantConclusion: string;
   minorityViews: string[];
   summary: string;
+  provider: 'openai' | 'local-fallback';
+  providerDetail: string;
   filecoinCid: string;
   archiveGatewayUrl: string | null;
   createdAt: string;
@@ -126,6 +128,8 @@ function mapSynthesis(synthesis: ApiSynthesis): SynthesisOutput {
     dissensusPoints: synthesis.dissensusPoints,
     minorityViews: synthesis.minorityViews,
     qualityWeightedSummary: synthesis.summary,
+    provider: synthesis.provider,
+    providerDetail: synthesis.providerDetail,
     archiveCid: synthesis.filecoinCid,
     storageNetwork: 'filecoin',
     archiveGatewayUrl: synthesis.archiveGatewayUrl,

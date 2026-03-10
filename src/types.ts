@@ -70,6 +70,8 @@ export interface SynthesisOutput {
   dissensusPoints: string[];
   minorityViews: string[];
   qualityWeightedSummary: string;
+  provider: 'openai' | 'local-fallback';
+  providerDetail: string;
   archiveCid: string;
   storageNetwork: StorageNetwork;
   archiveGatewayUrl: string | null;

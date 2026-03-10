@@ -49,6 +49,8 @@ export interface SynthesisRecord {
   dominantConclusion: string;
   minorityViews: string[];
   summary: string;
+  provider: 'openai' | 'local-fallback';
+  providerDetail: string;
   filecoinCid: string;
   archiveGatewayUrl: string | null;
   createdAt: string;
