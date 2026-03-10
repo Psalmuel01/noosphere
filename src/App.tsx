@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { useMatch, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -28,6 +29,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { jsPDF } from 'jspdf';
 import { HeroCanvas } from './components/HeroCanvas';
 import { useNoosphere } from './hooks/useNoosphere';
 import {
@@ -74,6 +76,8 @@ const emptySubmissionForm: SubmissionFormState = {
   changeMind: '',
   confidence: 7,
 };
+
+const shellWidthClass = 'mx-auto w-full max-w-[1680px]';
 
 function formatRelativeDeadline(deadline: string) {
   const delta = new Date(deadline).getTime() - Date.now();
@@ -187,7 +191,7 @@ function QuestionCard({
             <p className="text-lg font-bold text-slate-100">{submissionCount}</p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-            <p className="mb-1 uppercase tracking-[0.2em] text-slate-500">Signal</p>
+            <p className="mb-1 uppercase tracking-[0.2em] text-slate-500">Quality score</p>
             <p className="text-lg font-bold text-slate-100">{Math.round(avgQuality * 100)}%</p>
           </div>
         </div>
@@ -203,6 +207,7 @@ function QuestionCard({
 export default function App() {
   const {
     state,
+    backendStatus,
     storageStatus,
     isSynthesizing,
     createQuestion,
@@ -211,8 +216,14 @@ export default function App() {
     runSynthesis,
     resetDemoData,
   } = useNoosphere();
-  const [screen, setScreen] = useState<Screen>('landing');
-  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(state.questions[0]?.id ?? null);
+  const navigate = useNavigate();
+  const matchQuestion = useMatch('/questions/:id');
+  const matchSynthesis = useMatch('/questions/:id/synthesis');
+  const routeQuestionId = matchSynthesis?.params.id ?? matchQuestion?.params.id ?? null;
+  const screen: Screen = matchSynthesis ? 'synthesis' : matchQuestion ? 'question' : 'landing';
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(
+    routeQuestionId ?? state.questions[0]?.id ?? null,
+  );
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -227,10 +238,15 @@ export default function App() {
   const deferredSearch = useDeferredValue(searchTerm);
 
   useEffect(() => {
-    if (!selectedQuestionId && state.questions[0]) {
+    if (routeQuestionId && routeQuestionId !== selectedQuestionId) {
+      setSelectedQuestionId(routeQuestionId);
+      return;
+    }
+
+    if (!routeQuestionId && !selectedQuestionId && state.questions[0]) {
       setSelectedQuestionId(state.questions[0].id);
     }
-  }, [selectedQuestionId, state.questions]);
+  }, [routeQuestionId, selectedQuestionId, state.questions]);
 
   const visibleQuestions = state.questions.filter((question) => {
     const statusMatch = filterStatus === 'all' || question.status === filterStatus;
@@ -245,6 +261,7 @@ export default function App() {
   const activeMetrics = activeQuestion
     ? deriveQuestionMetrics(activeQuestion, state.submissions, state.syntheses, state.verifications)
     : null;
+  const showMissingQuestion = screen !== 'landing' && !activeQuestion && state.questions.length > 0;
   const activeSubmission =
     activeMetrics?.submissions.find((submission) => submission.id === selectedSubmissionId) ??
     activeMetrics?.submissions[0] ??
@@ -265,12 +282,7 @@ export default function App() {
   }, [activeMetrics, selectedSubmissionId]);
 
   async function handleCreateQuestion() {
-    if (
-      !questionDraft.text.trim() ||
-      !questionDraft.description.trim() ||
-      !questionDraft.creatorName.trim() ||
-      !questionDraft.deadline
-    ) {
+    if (!questionDraft.text.trim() || !questionDraft.description.trim()) {
       return;
     }
 
@@ -296,7 +308,7 @@ export default function App() {
 
     startTransition(() => {
       setSelectedQuestionId(question.id);
-      setScreen('question');
+      navigate(`/questions/${question.id}`);
     });
   }
 
@@ -349,48 +361,120 @@ export default function App() {
 
     await runSynthesis(activeQuestion.id);
     startTransition(() => {
-      setScreen('synthesis');
+      navigate(`/questions/${activeQuestion.id}/synthesis`);
     });
   }
 
   function handleDownloadSynthesis(synthesis: SynthesisOutput, question: Question) {
-    const markdown = [
-      `# ${question.text}`,
-      '',
-      `Generated: ${new Date(synthesis.generatedAt).toLocaleString()}`,
-      `Archive CID: ${synthesis.archiveCid}`,
-      '',
-      '## Dominant Conclusion',
-      synthesis.dominantConclusion,
-      '',
-      '## Consensus Points',
-      ...synthesis.consensusPoints.map((point) => `- ${point}`),
-      '',
-      '## Dissent',
-      ...synthesis.dissensusPoints.map((point) => `- ${point}`),
-      '',
-      '## Minority Views',
-      ...synthesis.minorityViews.map((point) => `- ${point}`),
-      '',
-      '## Summary',
-      synthesis.qualityWeightedSummary,
-    ].join('\n');
+    const doc = new jsPDF({
+      unit: 'pt',
+      format: 'a4',
+    });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
 
-    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${question.id}-synthesis.md`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const ensureSpace = (height = 24) => {
+      if (y + height <= pageHeight - margin) {
+        return;
+      }
+
+      doc.addPage();
+      y = margin;
+    };
+
+    const addWrappedText = (
+      text: string,
+      options: { size?: number; color?: [number, number, number]; weight?: 'normal' | 'bold'; gap?: number } = {},
+    ) => {
+      const size = options.size ?? 11;
+      const gap = options.gap ?? 16;
+
+      doc.setFont('helvetica', options.weight === 'bold' ? 'bold' : 'normal');
+      doc.setFontSize(size);
+      if (options.color) {
+        doc.setTextColor(...options.color);
+      } else {
+        doc.setTextColor(24, 24, 27);
+      }
+
+      const lines = doc.splitTextToSize(text, contentWidth);
+      const lineHeight = size * 1.45;
+      ensureSpace(lines.length * lineHeight + gap);
+      doc.text(lines, margin, y);
+      y += lines.length * lineHeight + gap;
+    };
+
+    const addSection = (title: string, items: string[] | string) => {
+      addWrappedText(title, {
+        size: 10,
+        color: [79, 70, 229],
+        weight: 'bold',
+        gap: 10,
+      });
+
+      if (Array.isArray(items)) {
+        if (items.length === 0) {
+          addWrappedText('None recorded.', { size: 11, color: [82, 82, 91] });
+          return;
+        }
+
+        items.forEach((item) => {
+          addWrappedText(`• ${item}`, { size: 11, color: [39, 39, 42], gap: 10 });
+        });
+        y += 6;
+        return;
+      }
+
+      addWrappedText(items, { size: 11, color: [39, 39, 42] });
+    };
+
+    addWrappedText('NOOSPHERE SYNTHESIS REPORT', {
+      size: 12,
+      color: [79, 70, 229],
+      weight: 'bold',
+      gap: 12,
+    });
+    addWrappedText(question.text, {
+      size: 22,
+      color: [15, 23, 42],
+      weight: 'bold',
+      gap: 14,
+    });
+    addWrappedText(question.description, {
+      size: 12,
+      color: [71, 85, 105],
+      gap: 18,
+    });
+    addWrappedText(
+      `Generated ${new Date(synthesis.generatedAt).toLocaleString()} • ${
+        synthesis.provider === 'gemini' ? 'Gemini synthesis' : 'Local fallback synthesis'
+      }`,
+      {
+        size: 10,
+        color: [100, 116, 139],
+        gap: 20,
+      },
+    );
+    addSection('Dominant Conclusion', synthesis.dominantConclusion);
+    addSection('Consensus', synthesis.consensusPoints);
+    addSection('Disagreements', synthesis.dissensusPoints);
+    addSection('Minority Views', synthesis.minorityViews);
+    addSection('Summary', synthesis.qualityWeightedSummary);
+    addSection('Generation Notes', synthesis.providerDetail);
+    addSection('Archive CID', synthesis.archiveCid);
+
+    doc.save(`${question.id}-synthesis-report.pdf`);
   }
 
   return (
-    <div className="min-h-screen bg-background-dark font-display text-slate-100">
+    <div className="flex min-h-screen flex-col bg-background-dark font-display text-slate-100">
       <header className="sticky top-0 z-50 border-b border-primary/10 bg-background-dark/85 px-6 py-4 backdrop-blur-md md:px-12">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6">
+        <div className={`${shellWidthClass} flex items-center justify-between gap-6`}>
           <button
-            onClick={() => startTransition(() => setScreen('landing'))}
+            onClick={() => startTransition(() => navigate('/'))}
             className="flex items-center gap-3 text-primary"
           >
             <Box className="h-8 w-8" />
@@ -421,15 +505,39 @@ export default function App() {
         </div>
       </header>
 
-      <main>
+      <main className="flex-1">
         <AnimatePresence mode="wait">
+          {showMissingQuestion && (
+            <motion.div key="missing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <section className={`${shellWidthClass} px-6 py-16 md:px-12`}>
+                <div className="rounded-3xl border border-slate-800 bg-slate-950/70 p-8 text-center">
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                    Question Not Found
+                  </p>
+                  <h2 className="mt-4 text-3xl font-bold text-slate-100">
+                    That session does not exist anymore.
+                  </h2>
+                  <p className="mt-3 text-sm text-slate-400">
+                    Choose another question from the feed.
+                  </p>
+                  <button
+                    onClick={() => startTransition(() => navigate('/'))}
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110"
+                  >
+                    Back to questions
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                </div>
+              </section>
+            </motion.div>
+          )}
           {screen === 'landing' && (
             <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <section className="relative overflow-hidden px-6 pb-16 pt-20 md:px-12">
                 <HeroCanvas />
                 <div className="absolute inset-0 stars-bg opacity-30" />
                 <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 nebula-gradient" />
-                <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className={`relative ${shellWidthClass} grid gap-10 lg:grid-cols-[minmax(0,1.25fr)_minmax(380px,0.75fr)]`}>
                   <div className="space-y-8">
                     <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font- uppercase tracking-[0.25em] text-primary">
                       <span className="relative flex h-2 w-2">
@@ -448,7 +556,14 @@ export default function App() {
                     </div>
                     <div className="flex flex-wrap gap-4">
                       <button
-                        onClick={() => startTransition(() => setScreen('question'))}
+                        onClick={() =>
+                          startTransition(() => {
+                            const target = routeQuestionId ?? selectedQuestionId ?? state.questions[0]?.id;
+                            if (target) {
+                              navigate(`/questions/${target}`);
+                            }
+                          })
+                        }
                         className="flex items-center gap-2 rounded-xl bg-primary px-6 py-4 font-bold text-white shadow-xl shadow-primary/20 transition hover:scale-[1.02]"
                       >
                         Explore Live Graph
@@ -492,6 +607,29 @@ export default function App() {
                         {storageStatus.detail}
                       </p>
                     </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {[backendStatus.impulse, backendStatus.gemini, backendStatus.filecoin].map(
+                        (status) => (
+                          <div
+                            key={status.label}
+                            className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5"
+                          >
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${
+                                status.ok
+                                  ? 'bg-teal-500/10 text-teal-400'
+                                  : 'bg-amber-500/10 text-amber-400'
+                              }`}
+                            >
+                              {status.label}
+                            </span>
+                            <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                              {status.detail}
+                            </p>
+                          </div>
+                        ),
+                      )}
+                    </div>
                   </div>
 
                   <div
@@ -504,8 +642,7 @@ export default function App() {
                       </p>
                       <h2 className="text-2xl font-bold">Open a new reasoning session</h2>
                       <p className="text-sm leading-relaxed text-slate-400">
-                        Create a question, set the synthesis deadline, and invite verified humans to
-                        contribute structured reasoning.
+                        Create a question and start collecting structured reasoning immediately.
                       </p>
                     </div>
                     <div className="space-y-4">
@@ -537,7 +674,7 @@ export default function App() {
                               creatorName: event.target.value,
                             }))
                           }
-                          placeholder="Creator name"
+                          placeholder="Creator name (optional)"
                           className="h-12 rounded-xl border border-slate-800 bg-slate-900/70 px-4 text-sm outline-none transition focus:border-primary"
                         />
                         <input
@@ -557,7 +694,7 @@ export default function App() {
                         onChange={(event) =>
                           setQuestionDraft((current) => ({ ...current, tags: event.target.value }))
                         }
-                        placeholder="Tags, comma separated"
+                        placeholder="Tags, comma separated (optional)"
                         className="h-12 w-full rounded-xl border border-slate-800 bg-slate-900/70 px-4 text-sm outline-none transition focus:border-primary"
                       />
                       <button
@@ -572,7 +709,7 @@ export default function App() {
                 </div>
               </section>
 
-              <section className="mx-auto max-w-7xl px-6 pb-20 md:px-12">
+              <section className={`${shellWidthClass} px-6 pb-20 md:px-12`}>
                 <div className="mb-10 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">
@@ -601,7 +738,7 @@ export default function App() {
                     ))}
                   </div>
                 </div>
-                <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
                   {visibleQuestions.map((question) => {
                     const metrics = deriveQuestionMetrics(
                       question,
@@ -620,9 +757,13 @@ export default function App() {
                         onOpen={() => {
                           setSelectedQuestionId(question.id);
                           setSelectedSubmissionId(metrics.submissions[0]?.id ?? null);
-                          startTransition(() =>
-                            setScreen(question.status === 'complete' ? 'synthesis' : 'question'),
-                          );
+                          startTransition(() => {
+                            const target =
+                              question.status === 'complete'
+                                ? `/questions/${question.id}/synthesis`
+                                : `/questions/${question.id}`;
+                            navigate(target);
+                          });
                         }}
                       />
                     );
@@ -638,13 +779,13 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex h-[calc(100vh-81px)] flex-col"
+              className="flex min-h-0 flex-1 flex-col"
             >
               <div className="border-b border-slate-800 bg-background-dark/80 px-6 py-4 md:px-10">
-                <div className="mx-auto flex max-w-[1600px] flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className={`${shellWidthClass} flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between`}>
                   <div className="flex items-start gap-4">
                     <button
-                      onClick={() => startTransition(() => setScreen('landing'))}
+                      onClick={() => startTransition(() => navigate('/'))}
                       className="rounded-xl border border-slate-800 p-3 text-slate-400 transition hover:border-primary hover:text-primary"
                     >
                       <ArrowLeft className="h-4 w-4" />
@@ -681,11 +822,13 @@ export default function App() {
                       className="flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Rocket className="h-4 w-4" />
-                      {isSynthesizing === activeQuestion.id ? 'Synthesizing...' : 'Run Synthesis'}
+                      {isSynthesizing === activeQuestion.id ? 'Aggregating...' : 'Aggregate Reasoning'}
                     </button>
                     {activeMetrics.synthesis && (
                       <button
-                        onClick={() => startTransition(() => setScreen('synthesis'))}
+                        onClick={() =>
+                          startTransition(() => navigate(`/questions/${activeQuestion.id}/synthesis`))
+                        }
                         className="flex h-12 items-center gap-2 rounded-xl border border-slate-700 px-5 text-sm font-bold text-slate-100 transition hover:border-primary"
                       >
                         <Eye className="h-4 w-4" />
@@ -696,15 +839,15 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="mx-auto grid h-full max-w-[1600px] flex-1 gap-0 xl:grid-cols-[340px_minmax(0,1fr)_360px]">
-                <aside className="border-r border-slate-800 bg-background-dark/60 p-6">
+              <div className="px-6 py-10 pb-8 md:px-20">
+                <div className={`${shellWidthClass} grid min-h-0 flex-1 gap-10 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`}>
+                  <aside className="rounded-3xl border border-slate-800 bg-background-dark/60 p-6 xl:p-8">
                   <div className="mb-6">
                     <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
                       Submit Your Reasoning
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                      Every submission must be tied to one verified human and include at least two
-                      structured premises.
+                      Submit a conclusion with one or more supporting premises. Verification is optional for this MVP.
                     </p>
                   </div>
 
@@ -740,7 +883,7 @@ export default function App() {
                           <p className="mt-1 text-sm text-slate-400">
                             {activeVerification
                               ? `Verified via ${activeVerification.mode === 'demo' ? 'demo mode' : 'World ID'}`
-                              : 'Verify before publishing to the graph'}
+                              : 'Optional step for demo identity checks'}
                           </p>
                         </div>
                         {activeVerification && (
@@ -788,7 +931,7 @@ export default function App() {
                         Step 2 · Why?
                       </label>
                       <p className="mt-2 text-sm text-slate-400">
-                        Add at least two reasoning blocks. Claim first, then evidence.
+                        Add one or more reasoning blocks. Claim first, then evidence.
                       </p>
                     </div>
 
@@ -896,7 +1039,10 @@ export default function App() {
 
                     <button
                       onClick={() => void handleSubmitReasoning()}
-                      disabled={!activeVerification}
+                      disabled={
+                        !submissionForm.conclusion.trim() ||
+                        submissionForm.premises.filter((premise) => premise.trim()).length === 0
+                      }
                       className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Rocket className="h-4 w-4" />
@@ -915,42 +1061,7 @@ export default function App() {
                     </div>
                   </div>
                 </aside>
-
-                <section className="relative min-h-0 border-r border-slate-800 bg-background-dark px-4 py-4">
-                  <Suspense fallback={<GraphFallback />}>
-                    <ReasoningGraph
-                      submissions={activeMetrics.submissions}
-                      selectedSubmissionId={activeSubmission?.id ?? null}
-                      onSelectSubmission={setSelectedSubmissionId}
-                    />
-                  </Suspense>
-                  <div className="pointer-events-none absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-6 rounded-full border border-slate-800 bg-slate-950/85 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 shadow-xl">
-                    <span className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-primary" />
-                      Consensus cluster
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-teal-400" />
-                      Adjacent reasoning
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-amber-400" />
-                      Dissent cluster
-                    </span>
-                  </div>
-                  <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-                    {[Plus, Minus, Focus].map((Icon, index) => (
-                      <button
-                        key={index}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-950/90 text-slate-400 shadow-sm transition hover:border-primary hover:text-primary"
-                      >
-                        <Icon className="h-4 w-4" />
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <aside className="bg-background-dark/60 p-6">
+                  <aside className="rounded-3xl border border-slate-800 bg-background-dark/60 p-6 xl:p-8">
                   <div className="mb-6 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
@@ -975,7 +1086,7 @@ export default function App() {
                             </p>
                           </div>
                           <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                            {Math.round(activeSubmission.qualityScore * 100)}% quality
+                            {Math.round(activeSubmission.qualityScore * 100)}% quality score
                           </div>
                         </div>
                         {activeSubmission.reasoningTypes.length > 0 && (
@@ -1100,7 +1211,9 @@ export default function App() {
                             {activeMetrics.synthesis.qualityWeightedSummary}
                           </p>
                           <button
-                            onClick={() => startTransition(() => setScreen('synthesis'))}
+                            onClick={() =>
+                              startTransition(() => navigate(`/questions/${activeQuestion.id}/synthesis`))
+                            }
                             className="mt-4 flex items-center gap-2 text-sm font-bold text-primary"
                           >
                             Open full synthesis
@@ -1114,7 +1227,187 @@ export default function App() {
                       No reasoning node selected yet.
                     </div>
                   )}
-                </aside>
+                  </aside>
+                </div>
+
+                <section className={`${shellWidthClass} relative mt-6 h-[560px] overflow-hidden rounded-3xl border border-slate-800 bg-background-dark px-4 py-4 md:h-[640px] md:px-6 md:py-6`}>
+                  <Suspense fallback={<GraphFallback />}>
+                    <ReasoningGraph
+                      submissions={activeMetrics.submissions}
+                      selectedSubmissionId={activeSubmission?.id ?? null}
+                      onSelectSubmission={setSelectedSubmissionId}
+                    />
+                  </Suspense>
+                  <div className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 items-center gap-6 rounded-full border border-slate-800 bg-slate-950/85 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 shadow-xl xl:flex">
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-primary" />
+                      Consensus cluster
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-teal-400" />
+                      Adjacent reasoning
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-amber-400" />
+                      Dissent cluster
+                    </span>
+                  </div>
+                </section>
+
+                <section className={`${shellWidthClass} mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(360px,0.7fr)]`}>
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/70 p-6 xl:p-8">
+                    <div className="mb-6 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                          Reasoning Submissions
+                        </p>
+                        <p className="mt-2 text-sm text-slate-400">
+                          Every conclusion and premise submitted for this question.
+                          <span className="mt-2 block text-xs text-slate-500">
+                            Predicted quality scores weight the synthesis ranking and scale node size in the graph.
+                          </span>
+                        </p>
+                      </div>
+                      <div className="rounded-full border border-slate-800 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                        {activeMetrics.submissions.length} submissions
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {activeMetrics.submissions.map((submission) => (
+                        <button
+                          key={submission.id}
+                          type="button"
+                          onClick={() => setSelectedSubmissionId(submission.id)}
+                          className={`w-full rounded-2xl border p-5 text-left transition ${
+                            submission.id === activeSubmission?.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-slate-800 bg-slate-900/60 hover:border-primary/40'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-bold text-slate-100">
+                                {submission.contributorName}
+                              </p>
+                              <p className="mt-1 text-lg font-semibold leading-snug text-slate-100">
+                                {submission.conclusion}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="rounded-full bg-slate-950 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                                Confidence {submission.confidence}/10
+                              </div>
+                              <div className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+                                Quality {Math.round(submission.qualityScore * 100)}%
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4 space-y-2">
+                            {submission.premises.map((premise, index) => (
+                              <p key={`${submission.id}-${index}`} className="text-sm leading-relaxed text-slate-300">
+                                <span className="mr-2 text-slate-500">{index + 1}.</span>
+                                {premise}
+                              </p>
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/70 p-6 xl:p-8">
+                    <div className="mb-6 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                          AI Aggregation
+                        </p>
+                        <p className="mt-2 text-sm text-slate-400">
+                          Aggregate the submissions into a single synthesis of consensus and disagreement.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => void handleRunSynthesis()}
+                        disabled={activeMetrics.submissions.length < 2 || isSynthesizing === activeQuestion.id}
+                        className="flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Rocket className="h-4 w-4" />
+                        {isSynthesizing === activeQuestion.id ? 'Aggregating...' : 'Aggregate'}
+                      </button>
+                    </div>
+
+                    {activeMetrics.synthesis ? (
+                      <div className="space-y-5">
+                        <div
+                          className={`rounded-2xl border p-4 ${
+                            activeMetrics.synthesis.provider === 'gemini'
+                              ? 'border-teal-500/30 bg-teal-500/10'
+                              : 'border-amber-500/30 bg-amber-500/10'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-200">
+                              Aggregation Source
+                            </p>
+                            <span className="rounded-full bg-slate-950/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-200">
+                              {activeMetrics.synthesis.provider === 'gemini'
+                                ? 'Gemini'
+                                : 'Local fallback'}
+                            </span>
+                          </div>
+                          <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                            {activeMetrics.synthesis.providerDetail}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+                            Dominant Conclusion
+                          </p>
+                          <p className="mt-3 text-lg font-semibold leading-relaxed text-slate-100">
+                            {activeMetrics.synthesis.dominantConclusion}
+                          </p>
+                        </div>
+
+                        {[
+                          ['Consensus', activeMetrics.synthesis.consensusPoints],
+                          ['Disagreements', activeMetrics.synthesis.dissensusPoints],
+                          ['Minority Views', activeMetrics.synthesis.minorityViews],
+                        ].map(([label, items]) => (
+                          <div key={label} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                              {label}
+                            </p>
+                            <div className="mt-3 space-y-2">
+                              {(items as string[]).length > 0 ? (
+                                (items as string[]).map((item) => (
+                                  <p key={item} className="text-sm leading-relaxed text-slate-300">
+                                    {item}
+                                  </p>
+                                ))
+                              ) : (
+                                <p className="text-sm text-slate-500">No items yet.</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                            Summary
+                          </p>
+                          <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                            {activeMetrics.synthesis.qualityWeightedSummary}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-5 text-sm leading-relaxed text-slate-400">
+                        No aggregation yet. Add at least two reasoning submissions, then click Aggregate.
+                      </div>
+                    )}
+                  </div>
+                </section>
               </div>
             </motion.div>
           )}
@@ -1125,9 +1418,9 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="mx-auto max-w-6xl px-6 py-10 md:px-12"
+              className={`${shellWidthClass} px-6 py-10 md:px-12`}
             >
-              <div className="mb-10 flex flex-col gap-4 border-b border-slate-800 pb-8 md:flex-row md:items-end md:justify-between">
+              <div className="mb-10 flex flex-col gap-4 border-b border-slate-800 pb-8 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-teal-400">
                     <CheckCircle2 className="h-5 w-5" />
@@ -1138,13 +1431,24 @@ export default function App() {
                   <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-tight md:text-5xl">
                     {activeQuestion.text}
                   </h1>
-                  <p className="max-w-3xl text-sm leading-relaxed text-slate-400">
+                  {/* <p className="max-w-3xl text-sm leading-relaxed text-slate-400">
                     {activeMetrics.synthesis.qualityWeightedSummary}
-                  </p>
+                  </p> */}
+                  <div
+                    className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
+                      activeMetrics.synthesis.provider === 'gemini'
+                        ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
+                        : 'border-amber-500/30 bg-amber-500/10 text-amber-100'
+                    }`}
+                  >
+                    {activeMetrics.synthesis.providerDetail}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={() => startTransition(() => setScreen('question'))}
+                    onClick={() =>
+                      startTransition(() => navigate(`/questions/${activeQuestion.id}`))
+                    }
                     className="flex h-11 items-center gap-2 rounded-xl border border-slate-800 px-4 text-sm font-bold text-slate-300 transition hover:border-primary hover:text-primary"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -1311,7 +1615,7 @@ export default function App() {
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        ['Average quality', `${Math.round(activeMetrics.avgQuality * 100)}%`],
+                        ['Average quality score', `${Math.round(activeMetrics.avgQuality * 100)}%`],
                         ['Submission count', `${activeMetrics.submissions.length}`],
                         ['Verified humans', `${activeMetrics.verifiedHumans}`],
                         ['Generated', new Date(activeMetrics.synthesis.generatedAt).toLocaleString()],
@@ -1347,19 +1651,19 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer class="bg-background-dark border-t border-slate-800 py-12 px-6">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div class="flex items-center gap-3 text-primary opacity-70 grayscale hover:grayscale-0 transition-all">
+      <footer className="mt-auto border-t border-slate-800 bg-background-dark px-6 py-12">
+        <div className={`${shellWidthClass} flex flex-col items-center justify-between gap-8 md:flex-row`}>
+          <div className="flex items-center gap-3 text-primary opacity-70 grayscale transition-all hover:grayscale-0">
             <Box className="h-8 w-8" />
-            <h2 class="text-slate-100 text-lg font-bold">Noosphere</h2>
+            <h2 className="text-lg font-bold text-slate-100">Noosphere</h2>
           </div>
-          <div class="flex gap-8 text-sm text-slate-500">
-            <a class="hover:text-primary" href="#">Docs</a>
-            <a class="hover:text-primary" href="#">Github</a>
-            <a class="hover:text-primary" href="#">Twitter</a>
-            <a class="hover:text-primary" href="#">Discord</a>
+          <div className="flex flex-wrap justify-center gap-8 text-sm text-slate-500">
+            <a className="hover:text-primary" href="#">Docs</a>
+            <a className="hover:text-primary" href="#">Github</a>
+            <a className="hover:text-primary" href="#">Twitter</a>
+            <a className="hover:text-primary" href="#">Discord</a>
           </div>
-          <p class="text-slate-600 text-xs">
+          <p className="text-xs text-slate-600">
             © 2026 Noosphere Collective Intelligence. Built for the future of thought.
           </p>
         </div>

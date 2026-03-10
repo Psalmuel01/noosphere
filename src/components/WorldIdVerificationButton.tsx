@@ -14,17 +14,35 @@ const worldAction = import.meta.env.VITE_WORLD_ID_ACTION as string | undefined;
 function readRpContext() {
   const raw = import.meta.env.VITE_WORLD_ID_RP_CONTEXT_JSON;
   if (!raw) {
-    return null;
+    return {
+      context: null,
+      reason: 'Missing VITE_WORLD_ID_RP_CONTEXT_JSON.',
+    };
   }
 
   try {
-    return JSON.parse(raw) as RpContext;
+    const context = JSON.parse(raw) as RpContext;
+
+    if (context.expires_at * 1000 < Date.now()) {
+      return {
+        context: null,
+        reason: `World ID rp_context expired at ${new Date(context.expires_at * 1000).toISOString()}.`,
+      };
+    }
+
+    return {
+      context,
+      reason: null,
+    };
   } catch {
-    return null;
+    return {
+      context: null,
+      reason: 'VITE_WORLD_ID_RP_CONTEXT_JSON is not valid JSON.',
+    };
   }
 }
 
-const rpContext = readRpContext();
+const { context: rpContext, reason: rpContextError } = readRpContext();
 
 export function WorldIdVerificationButton({
   questionId,
@@ -69,10 +87,9 @@ export function WorldIdVerificationButton({
           {isWorking ? 'Verifying...' : 'Verify Human (Demo)'}
         </button>
         <p className="text-[11px] leading-relaxed text-slate-500">
-          World ID is wired for client integration, but the official flow still requires a signed RP
-          context. Add `VITE_WORLD_ID_APP_ID`, `VITE_WORLD_ID_ACTION`, and
-          `VITE_WORLD_ID_RP_CONTEXT_JSON` to enable the live widget. Demo verification keeps the
-          app functional locally.
+          {rpContextError ??
+            'World ID is wired for client integration, but the official flow still requires a signed RP context. Add VITE_WORLD_ID_APP_ID, VITE_WORLD_ID_ACTION, and VITE_WORLD_ID_RP_CONTEXT_JSON to enable the live widget.'}{' '}
+          Demo verification keeps the app functional locally.
         </p>
       </div>
     );

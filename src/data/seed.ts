@@ -232,6 +232,8 @@ export const seedState: NoosphereState = {
       ],
       qualityWeightedSummary:
         'Noosphere aggregated 3 structured reasoning chains from 3 verified humans. The dominant conclusion was that misalignment risk rises fastest when capability growth outpaces containment and governance. A minority cluster argued that deployment incentives are the more fundamental failure mode.',
+      provider: 'local-fallback',
+      providerDetail: 'Seeded demo synthesis.',
       archiveCid: 'bafyreihj7w6seedarchiveagi',
       storageNetwork: 'storacha',
       archiveGatewayUrl: 'https://storacha.link/ipfs/bafyreihj7w6seedarchiveagi',

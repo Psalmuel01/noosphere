@@ -2,7 +2,7 @@ export type Screen = 'landing' | 'question' | 'synthesis';
 
 export type QuestionStatus = 'open' | 'synthesizing' | 'complete';
 export type VerificationMode = 'demo' | 'world-id';
-export type StorageNetwork = 'storacha' | 'local-ipfs';
+export type StorageNetwork = 'storacha' | 'filecoin' | 'local-ipfs';
 export type ReasoningType =
   | 'empirical evidence'
   | 'historical precedent'
@@ -70,6 +70,8 @@ export interface SynthesisOutput {
   dissensusPoints: string[];
   minorityViews: string[];
   qualityWeightedSummary: string;
+  provider: 'gemini' | 'local-fallback';
+  providerDetail: string;
   archiveCid: string;
   storageNetwork: StorageNetwork;
   archiveGatewayUrl: string | null;
@@ -108,4 +110,22 @@ export interface NoosphereState {
   submissions: ReasoningSubmission[];
   syntheses: SynthesisOutput[];
   verifications: VerificationRecord[];
+}
+
+export interface IntegrationStatus {
+  ok: boolean;
+  label: string;
+  detail: string;
+}
+
+export interface BackendStatus {
+  storacha: IntegrationStatus;
+  impulse: IntegrationStatus;
+  gemini: IntegrationStatus;
+  filecoin: IntegrationStatus;
+}
+
+export interface StorageStatusSummary extends IntegrationStatus {
+  network: StorageNetwork;
+  configured: boolean;
 }

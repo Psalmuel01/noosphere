@@ -17,6 +17,7 @@ type GraphNodeData = {
   submission: ReasoningSubmission;
   label: string;
   color: string;
+  scale: number;
 };
 
 type GraphNode = Node<GraphNodeData, 'reasoning'>;
@@ -33,6 +34,8 @@ function ReasoningNode({ data, selected }: NodeProps<GraphNode>) {
       }`}
       style={{
         boxShadow: selected ? `0 0 30px ${data.color}22` : undefined,
+        transform: `scale(${data.scale})`,
+        transformOrigin: 'center',
       }}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -84,6 +87,8 @@ function buildGraph(submissions: ReasoningSubmission[]) {
     const label = clusterLabelFromKeywords(clusterSubmissions[0]?.keywords ?? [clusterId]);
 
     return clusterSubmissions.map((submission, nodeIndex) => {
+      const normalizedScore = Math.max(0, Math.min(1, submission.qualityScore));
+      const scale = 0.85 + normalizedScore * 0.5;
       const radius = 110 + (nodeIndex % 3) * 34;
       const localAngle = angle + (Math.PI * 2 * nodeIndex) / Math.max(clusterSubmissions.length, 1);
 
@@ -98,6 +103,7 @@ function buildGraph(submissions: ReasoningSubmission[]) {
           submission,
           label,
           color,
+          scale,
         },
       };
     });
@@ -156,35 +162,42 @@ export function ReasoningGraph({
   }
 
   return (
-    <ReactFlow
-      fitView
-      minZoom={0.4}
-      maxZoom={1.8}
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      nodesDraggable={false}
-      elementsSelectable
-      onNodeClick={(_, node) => onSelectSubmission(node.id)}
-      defaultEdgeOptions={{ type: 'smoothstep' }}
-      className="bg-transparent"
-    >
-      <MiniMap
-        pannable
-        zoomable
-        nodeStrokeColor={(node) => {
-          if (node.id === selectedSubmissionId) {
-            return '#f8fafc';
-          }
+    <div className="h-full w-full">
+      <ReactFlow
+        fitView
+        minZoom={0.4}
+        maxZoom={1.8}
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        nodesDraggable={false}
+        elementsSelectable
+        onNodeClick={(_, node) => onSelectSubmission(node.id)}
+        defaultEdgeOptions={{ type: 'smoothstep' }}
+        className="bg-transparent"
+        style={{ width: '100%', height: '100%' }}
+      >
+        <MiniMap
+          pannable
+          zoomable
+          nodeStrokeColor={(node) => {
+            if (node.id === selectedSubmissionId) {
+              return '#f8fafc';
+            }
 
-          return (node.data as GraphNodeData).color;
-        }}
-        nodeColor={(node) => `${(node.data as GraphNodeData).color}88`}
-        maskColor="#02061788"
-        position="top-right"
+            return (node.data as GraphNodeData).color;
+          }}
+          nodeColor={(node) => `${(node.data as GraphNodeData).color}88`}
+          maskColor="#02061788"
+          position="top-right"
+        />
+      <Controls
+        position="bottom-right"
+        className="!border-0 !bg-transparent !shadow-none"
+        showInteractive={false}
       />
-      <Controls className="!border-slate-800 !bg-slate-950/90 !text-slate-200" showInteractive={false} />
-      <Background color="#334155" gap={24} variant={BackgroundVariant.Dots} />
-    </ReactFlow>
+        <Background color="#334155" gap={24} variant={BackgroundVariant.Dots} />
+      </ReactFlow>
+    </div>
   );
 }

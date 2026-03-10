@@ -170,6 +170,8 @@ export async function synthesizeQuestion(
     dissensusPoints,
     minorityViews,
     qualityWeightedSummary,
+    provider: 'local-fallback' as const,
+    providerDetail: 'Client-side legacy synthesis helper.',
     clusterBreakdown,
   };
 
