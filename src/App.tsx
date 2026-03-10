@@ -6,11 +6,12 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useMatch, useNavigate } from 'react-router-dom';
+import { Link, useMatch, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Book,
   Box,
   CheckCircle2,
   Cloud,
@@ -219,8 +220,15 @@ export default function App() {
   const navigate = useNavigate();
   const matchQuestion = useMatch('/questions/:id');
   const matchSynthesis = useMatch('/questions/:id/synthesis');
+  const matchDocs = useMatch('/docs');
   const routeQuestionId = matchSynthesis?.params.id ?? matchQuestion?.params.id ?? null;
-  const screen: Screen = matchSynthesis ? 'synthesis' : matchQuestion ? 'question' : 'landing';
+  const screen: Screen = matchDocs
+    ? 'docs'
+    : matchSynthesis
+      ? 'synthesis'
+      : matchQuestion
+        ? 'question'
+        : 'landing';
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(
     routeQuestionId ?? state.questions[0]?.id ?? null,
   );
@@ -449,8 +457,7 @@ export default function App() {
       gap: 18,
     });
     addWrappedText(
-      `Generated ${new Date(synthesis.generatedAt).toLocaleString()} • ${
-        synthesis.provider === 'gemini' ? 'Gemini synthesis' : 'Local fallback synthesis'
+      `Generated ${new Date(synthesis.generatedAt).toLocaleString()} • ${synthesis.provider === 'gemini' ? 'Gemini synthesis' : 'Local fallback synthesis'
       }`,
       {
         size: 10,
@@ -615,11 +622,10 @@ export default function App() {
                             className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5"
                           >
                             <span
-                              className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${
-                                status.ok
+                              className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${status.ok
                                   ? 'bg-teal-500/10 text-teal-400'
                                   : 'bg-amber-500/10 text-amber-400'
-                              }`}
+                                }`}
                             >
                               {status.label}
                             </span>
@@ -773,6 +779,203 @@ export default function App() {
             </motion.div>
           )}
 
+          {screen === 'docs' && (
+            <motion.div
+              key="docs"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className={`${shellWidthClass} px-6 py-14 md:px-12`}
+            >
+              {/* Header */}
+              <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="h-px w-6 bg-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-primary">
+                      Platform Documentation
+                    </span>
+                  </div>
+                  <h1 className="text-4xl font-bold tracking-tight text-slate-50 md:text-5xl">
+                    Noosphere Guide
+                  </h1>
+                  <p className="text-sm leading-relaxed text-slate-400">
+                    A collective reasoning system — capture structured arguments, score quality,
+                    synthesize consensus, and archive deliberations permanently.
+                  </p>
+                </div>
+                <button
+                  onClick={() => startTransition(() => navigate('/'))}
+                  className="flex h-10 w-fit items-center gap-2 rounded-xl border border-slate-800 px-4 text-xs font-bold uppercase tracking-[0.2em] text-slate-400 transition hover:border-primary hover:text-primary"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back
+                </button>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+                <div className="space-y-6">
+
+                  {/* How to Use — numbered steps */}
+                  <section className="rounded-3xl border border-slate-800 bg-slate-950/60 p-8">
+                    <p className="mb-6 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Getting started</p>
+                    <h2 className="mb-8 text-2xl font-bold text-slate-100">How to Use Noosphere</h2>
+                    <div className="grid gap-px overflow-hidden rounded-2xl border border-slate-800 md:grid-cols-4">
+                      {[
+                        { n: '01', title: 'Create', body: 'Describe the decision or debate and set a deadline.' },
+                        { n: '02', title: 'Submit', body: 'Participants add a conclusion with supporting premises.' },
+                        { n: '03', title: 'Verify', body: 'World ID verification ensures unique human responses.' },
+                        { n: '04', title: 'Aggregate', body: 'One click produces the AI synthesis and consensus.' },
+                      ].map(({ n, title, body }) => (
+                        <div key={n} className="group flex flex-col gap-3 bg-slate-950/80 p-5 transition hover:bg-slate-900/80">
+                          <span className="font-mono text-[10px] font-bold text-primary/60">{n}</span>
+                          <p className="text-sm font-bold text-slate-100">{title}</p>
+                          <p className="text-xs leading-relaxed text-slate-500">{body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* How it Works — horizontal pill cards */}
+                  <section className="rounded-3xl border border-slate-800 bg-slate-950/60 p-8">
+                    <p className="mb-6 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Architecture</p>
+                    <h2 className="mb-8 text-2xl font-bold text-slate-100">How It Works</h2>
+                    <div className="space-y-3">
+                      {[
+                        {
+                          icon: '⬡',
+                          label: 'Structured submissions',
+                          body: 'Every contribution follows a Claim → Evidence → Reasoning structure, enabling clean aggregation and comparison.',
+                          accent: 'text-primary',
+                        },
+                        {
+                          icon: '◈',
+                          label: 'Quality scoring',
+                          body: 'Impulse AI evaluates each argument\'s strength. Higher-quality submissions appear larger in the graph and influence synthesis more.',
+                          accent: 'text-teal-400',
+                        },
+                        {
+                          icon: '◎',
+                          label: 'Collective synthesis',
+                          body: 'Gemini analyzes the strongest submissions and produces consensus points, disagreements, and a clear summary.',
+                          accent: 'text-amber-400',
+                        },
+                        {
+                          icon: '⬡',
+                          label: 'Permanent record',
+                          body: 'Live submissions are stored with Storacha, then the full session is archived to Filecoin for long-term verification.',
+                          accent: 'text-blue-400',
+                        },
+                      ].map(({ icon, label, body, accent }) => (
+                        <div key={label} className="flex gap-5 rounded-2xl border border-slate-800 bg-slate-950/40 p-5 transition hover:border-slate-700">
+                          <span className={`mt-0.5 text-lg leading-none ${accent}`}>{icon}</span>
+                          <div>
+                            <p className={`text-xs font-bold uppercase tracking-[0.2em] ${accent}`}>{label}</p>
+                            <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{body}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Why it matters */}
+                  <section className="rounded-3xl border border-slate-800 bg-slate-950/60 p-8">
+                    <p className="mb-6 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Value</p>
+                    <h2 className="mb-8 text-2xl font-bold text-slate-100">Why It Matters</h2>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        { title: 'Clearer decisions', body: 'Teams see the strongest reasoning, not just the loudest voice.' },
+                        { title: 'Faster alignment', body: 'Consensus and dissent are surfaced automatically.' },
+                        { title: 'Better documentation', body: 'Every deliberation becomes a permanent, searchable record.' },
+                        { title: 'Trust & integrity', body: 'World ID and storage provenance make results verifiable.' },
+                      ].map(({ title, body }) => (
+                        <div key={title} className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5">
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-300">{title}</p>
+                          </div>
+                          <p className="text-sm leading-relaxed text-slate-500">{body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Tips */}
+                  <section className="rounded-3xl border border-slate-800 bg-slate-950/60 p-8">
+                    <p className="mb-6 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Best practices</p>
+                    <h2 className="mb-6 text-2xl font-bold text-slate-100">Tips for Strong Submissions</h2>
+                    <div className="space-y-3">
+                      {[
+                        'Start with your conclusion in one clear sentence.',
+                        'Use 2–4 premises that cite facts, examples, or reasoning steps.',
+                        'Add what would change your mind to keep reasoning honest.',
+                        'Choose reasoning tags to help the synthesis engine group ideas.',
+                      ].map((tip, i) => (
+                        <div key={i} className="flex items-start gap-4 rounded-2xl border border-slate-800/60 bg-slate-950/30 px-5 py-4">
+                          <span className="font-mono text-[10px] font-bold text-primary/50 mt-0.5">0{i + 1}</span>
+                          <p className="text-sm leading-relaxed text-slate-400">{tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+
+                {/* Sidebar */}
+                <aside className="space-y-4">
+                  <div className="rounded-3xl border border-primary/20 bg-primary/5 p-6">
+                    <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Quick Start</p>
+                    <div className="space-y-3">
+                      {[
+                        'Create a question from the landing page.',
+                        'Invite participants to submit reasoning.',
+                        'Click Aggregate to generate the synthesis.',
+                        'Download the report as a PDF.',
+                      ].map((step, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <span className="font-mono text-[10px] text-primary/60 mt-0.5">→</span>
+                          <p className="text-sm text-slate-300">{step}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-6">
+                    <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">What You'll See</p>
+                    <div className="space-y-3">
+                      {[
+                        ['Graph', 'Live clusters of related reasoning'],
+                        ['Scores', 'Quality rating on each submission'],
+                        ['Synthesis', 'Consensus + dissent after aggregation'],
+                      ].map(([label, desc]) => (
+                        <div key={label} className="flex items-start gap-3">
+                          <span className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 w-14 shrink-0">{label}</span>
+                          <p className="text-sm text-slate-400">{desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-6">
+                    <p className="mb-5 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">FAQ</p>
+                    <div className="space-y-5">
+                      {[
+                        { q: 'Is World ID required?', a: 'No — optional, but improves trust for sensitive sessions.' },
+                        { q: 'How are scores used?', a: 'Higher-quality reasoning influences the synthesis more.' },
+                        { q: 'Can I export results?', a: 'Yes. Every synthesis can be downloaded as a PDF report.' },
+                      ].map(({ q, a }) => (
+                        <div key={q} className="border-t border-slate-800 pt-4 first:border-0 first:pt-0">
+                          <p className="text-xs font-bold text-slate-200">{q}</p>
+                          <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{a}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </motion.div>
+          )}
+
           {screen === 'question' && activeQuestion && activeMetrics && (
             <motion.div
               key="question"
@@ -842,391 +1045,391 @@ export default function App() {
               <div className="px-6 py-10 pb-8 md:px-20">
                 <div className={`${shellWidthClass} grid min-h-0 flex-1 gap-10 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`}>
                   <aside className="rounded-3xl border border-slate-800 bg-background-dark/60 p-6 xl:p-8">
-                  <div className="mb-6">
-                    <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
-                      Submit Your Reasoning
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                      Submit a conclusion with one or more supporting premises. Verification is optional for this MVP.
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <input
-                      value={submissionForm.contributorName}
-                      onChange={(event) =>
-                        setSubmissionForm((current) => ({
-                          ...current,
-                          contributorName: event.target.value,
-                        }))
-                      }
-                      placeholder="Contributor name"
-                      className="h-11 w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 text-sm outline-none transition focus:border-primary"
-                    />
-                    <input
-                      value={submissionForm.walletAddress}
-                      onChange={(event) =>
-                        setSubmissionForm((current) => ({
-                          ...current,
-                          walletAddress: event.target.value,
-                        }))
-                      }
-                      placeholder="Wallet address"
-                      className="h-11 w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 text-sm outline-none transition focus:border-primary"
-                    />
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
-                            Verification Status
-                          </p>
-                          <p className="mt-1 text-sm text-slate-400">
-                            {activeVerification
-                              ? `Verified via ${activeVerification.mode === 'demo' ? 'demo mode' : 'World ID'}`
-                              : 'Optional step for demo identity checks'}
-                          </p>
-                        </div>
-                        {activeVerification && (
-                          <div className="flex items-center gap-2 rounded-full bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-green-400">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Verified
-                          </div>
-                        )}
-                      </div>
-                      <Suspense fallback={<VerificationFallback />}>
-                        <WorldIdVerificationButton
-                          questionId={activeQuestion.id}
-                          contributorName={submissionForm.contributorName}
-                          walletAddress={submissionForm.walletAddress}
-                          disabled={
-                            !submissionForm.contributorName.trim() || !submissionForm.walletAddress.trim()
-                          }
-                          onVerified={handleVerify}
-                        />
-                      </Suspense>
-                    </div>
-
-                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
-                        Step 1 · Your Answer
-                      </label>
-                      <p className="mt-2 text-sm text-slate-400">
-                        What is your answer to this question?
-                      </p>
-                      <textarea
-                        value={submissionForm.conclusion}
-                        onChange={(event) =>
-                          setSubmissionForm((current) => ({
-                            ...current,
-                            conclusion: event.target.value,
-                          }))
-                        }
-                        placeholder="State your answer or conclusion clearly."
-                        className="mt-3 min-h-28 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
-                        Step 2 · Why?
-                      </label>
-                      <p className="mt-2 text-sm text-slate-400">
-                        Add one or more reasoning blocks. Claim first, then evidence.
-                      </p>
-                    </div>
-
-                    {submissionForm.premises.map((premise, index) => (
-                      <textarea
-                        key={index}
-                        value={premise}
-                        onChange={(event) =>
-                          setSubmissionForm((current) => ({
-                            ...current,
-                            premises: current.premises.map((value, premiseIndex) =>
-                              premiseIndex === index ? event.target.value : value,
-                            ),
-                          }))
-                        }
-                        placeholder={[
-                          'Because...',
-                          'Given that...',
-                          'Evidence shows...',
-                          'Furthermore...',
-                          'Considering...',
-                        ][index]}
-                        className="min-h-20 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
-                      />
-                    ))}
-
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
-                        Step 3 · Reasoning Type
-                      </label>
-                      <p className="mt-2 text-sm text-slate-400">
-                        Tag the type of argument you are making so synthesis can group it correctly.
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {REASONING_TYPE_OPTIONS.map((option) => {
-                          const selected = submissionForm.reasoningTypes.includes(option);
-
-                          return (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() =>
-                                setSubmissionForm((current) => ({
-                                  ...current,
-                                  reasoningTypes: selected
-                                    ? current.reasoningTypes.filter((item) => item !== option)
-                                    : [...current.reasoningTypes, option],
-                                }))
-                              }
-                              className={`rounded-full border px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] transition ${selected
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-slate-700 text-slate-400 hover:border-primary/40'
-                                }`}
-                            >
-                              {option}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                      <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
-                        Step 4 · What Would Change Your Mind?
-                      </label>
-                      <p className="mt-2 text-sm text-slate-400">
-                        State the evidence or condition that would make you reconsider.
-                      </p>
-                      <textarea
-                        value={submissionForm.changeMind}
-                        onChange={(event) =>
-                          setSubmissionForm((current) => ({
-                            ...current,
-                            changeMind: event.target.value,
-                          }))
-                        }
-                        placeholder="What evidence would change your conclusion?"
-                        className="mt-3 min-h-24 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <label className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
-                          Step 5 · Confidence
-                        </label>
-                        <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white">
-                          {submissionForm.confidence}/10
-                        </span>
-                      </div>
-                      <input
-                        value={submissionForm.confidence}
-                        onChange={(event) =>
-                          setSubmissionForm((current) => ({
-                            ...current,
-                            confidence: Number(event.target.value),
-                          }))
-                        }
-                        type="range"
-                        min="1"
-                        max="10"
-                        className="h-2 w-full cursor-pointer accent-primary"
-                      />
-                    </div>
-
-                    <button
-                      onClick={() => void handleSubmitReasoning()}
-                      disabled={
-                        !submissionForm.conclusion.trim() ||
-                        submissionForm.premises.filter((premise) => premise.trim()).length === 0
-                      }
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <Rocket className="h-4 w-4" />
-                      Submit to Noosphere
-                    </button>
-                    <div className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
-                      <Cloud className="mt-0.5 h-4 w-4 text-primary" />
-                      Active reasoning is uploaded to{' '}
-                      {storageStatus.network === 'storacha'
-                        ? 'Storacha'
-                        : 'a local fallback CID layer'}{' '}
-                      immediately.
-                      {storageStatus.network === 'storacha'
-                        ? ' Each submission returns a live CID for the graph and synthesis pipeline.'
-                        : ' Add a Storacha delegation to move hot storage off the browser.'}
-                    </div>
-                  </div>
-                </aside>
-                  <aside className="rounded-3xl border border-slate-800 bg-background-dark/60 p-6 xl:p-8">
-                  <div className="mb-6 flex items-center justify-between">
-                    <div>
+                    <div className="mb-6">
                       <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
-                        Selected Reasoning
+                        Submit Your Reasoning
                       </p>
-                      <p className="mt-1 text-sm text-slate-400">
-                        Inspect the full chain, score, and provenance for the highlighted node.
+                      <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                        Submit a conclusion with one or more supporting premises. Verification is optional for this MVP.
                       </p>
                     </div>
-                  </div>
 
-                  {activeSubmission ? (
-                    <div className="space-y-6">
-                      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
-                        <div className="mb-4 flex items-center justify-between">
+                    <div className="space-y-4">
+                      <input
+                        value={submissionForm.contributorName}
+                        onChange={(event) =>
+                          setSubmissionForm((current) => ({
+                            ...current,
+                            contributorName: event.target.value,
+                          }))
+                        }
+                        placeholder="Contributor name"
+                        className="h-11 w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 text-sm outline-none transition focus:border-primary"
+                      />
+                      <input
+                        value={submissionForm.walletAddress}
+                        onChange={(event) =>
+                          setSubmissionForm((current) => ({
+                            ...current,
+                            walletAddress: event.target.value,
+                          }))
+                        }
+                        placeholder="Wallet address"
+                        className="h-11 w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 text-sm outline-none transition focus:border-primary"
+                      />
+                      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                        <div className="mb-3 flex items-center justify-between">
                           <div>
-                            <p className="text-lg font-bold text-slate-100">
-                              {activeSubmission.contributorName}
+                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+                              Verification Status
                             </p>
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                              {activeSubmission.walletAddress.slice(0, 12)}...
-                            </p>
-                          </div>
-                          <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                            {Math.round(activeSubmission.qualityScore * 100)}% quality score
-                          </div>
-                        </div>
-                        {activeSubmission.reasoningTypes.length > 0 && (
-                          <div className="mb-4 flex flex-wrap gap-2">
-                            {activeSubmission.reasoningTypes.map((type) => (
-                              <span
-                                key={type}
-                                className="rounded-full border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300"
-                              >
-                                {type}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="space-y-4">
-                          <div className="border-l-2 border-primary pl-4">
-                            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
-                              Conclusion
-                            </p>
-                            <p className="text-sm font-medium leading-relaxed text-slate-100">
-                              {activeSubmission.conclusion}
+                            <p className="mt-1 text-sm text-slate-400">
+                              {activeVerification
+                                ? `Verified via ${activeVerification.mode === 'demo' ? 'demo mode' : 'World ID'}`
+                                : 'Optional step for demo identity checks'}
                             </p>
                           </div>
-                          {activeSubmission.premises.map((premise, index) => (
-                            <div key={index} className="border-l-2 border-slate-800 pl-4">
-                              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-                                Premise {index + 1}
-                              </p>
-                              <p className="text-sm leading-relaxed text-slate-300">{premise}</p>
-                            </div>
-                          ))}
-                          {activeSubmission.changeMind && (
-                            <div className="border-l-2 border-amber-400 pl-4">
-                              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-400">
-                                Would Change Mind If
-                              </p>
-                              <p className="text-sm leading-relaxed text-slate-300">
-                                {activeSubmission.changeMind}
-                              </p>
+                          {activeVerification && (
+                            <div className="flex items-center gap-2 rounded-full bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-green-400">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Verified
                             </div>
                           )}
                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                          <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
-                            Confidence
-                          </p>
-                          <p className="mt-2 text-2xl font-bold">{activeSubmission.confidence}/10</p>
-                        </div>
-                        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                          <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
-                            Cluster
-                          </p>
-                          <p className="mt-2 text-sm font-bold text-slate-100">
-                            {activeSubmission.clusterId.replace('cluster-', '')}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
-                        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-                          Provenance
-                        </p>
-                        <div className="space-y-3 text-sm">
-                          <div className="flex items-start gap-3">
-                            <Cloud className="mt-0.5 h-4 w-4 text-primary" />
-                            <div>
-                              <p className="font-bold text-slate-100">Reasoning object CID</p>
-                              <p className="break-all font-mono text-xs text-slate-500">
-                                {activeSubmission.storageCid}
-                              </p>
-                              {activeSubmission.storageGatewayUrl && (
-                                <a
-                                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-primary"
-                                  href={activeSubmission.storageGatewayUrl}
-                                  rel="noreferrer"
-                                  target="_blank"
-                                >
-                                  Open object
-                                  <ExternalLink className="h-3.5 w-3.5" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <Database className="mt-0.5 h-4 w-4 text-primary" />
-                            <div>
-                              <p className="font-bold text-slate-100">Hot storage layer</p>
-                              <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">
-                                {activeSubmission.storageNetwork === 'storacha'
-                                  ? 'Storacha'
-                                  : 'Local fallback'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
-                            <div>
-                              <p className="font-bold text-slate-100">Verification mode</p>
-                              <p className="text-xs text-slate-500">
-                                {
-                                  state.verifications.find(
-                                    (verification) =>
-                                      verification.nullifierHash ===
-                                      activeSubmission.verificationNullifierHash,
-                                  )?.mode
-                                }
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {activeMetrics.synthesis && (
-                        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
-                          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
-                            Latest Synthesis
-                          </p>
-                          <p className="text-sm leading-relaxed text-slate-300">
-                            {activeMetrics.synthesis.qualityWeightedSummary}
-                          </p>
-                          <button
-                            onClick={() =>
-                              startTransition(() => navigate(`/questions/${activeQuestion.id}/synthesis`))
+                        <Suspense fallback={<VerificationFallback />}>
+                          <WorldIdVerificationButton
+                            questionId={activeQuestion.id}
+                            contributorName={submissionForm.contributorName}
+                            walletAddress={submissionForm.walletAddress}
+                            disabled={
+                              !submissionForm.contributorName.trim() || !submissionForm.walletAddress.trim()
                             }
-                            className="mt-4 flex items-center gap-2 text-sm font-bold text-primary"
-                          >
-                            Open full synthesis
-                            <ArrowRight className="h-4 w-4" />
-                          </button>
+                            onVerified={handleVerify}
+                          />
+                        </Suspense>
+                      </div>
+
+                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <label className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+                          Step 1 · Your Answer
+                        </label>
+                        <p className="mt-2 text-sm text-slate-400">
+                          What is your answer to this question?
+                        </p>
+                        <textarea
+                          value={submissionForm.conclusion}
+                          onChange={(event) =>
+                            setSubmissionForm((current) => ({
+                              ...current,
+                              conclusion: event.target.value,
+                            }))
+                          }
+                          placeholder="State your answer or conclusion clearly."
+                          className="mt-3 min-h-28 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
+                        />
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                        <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+                          Step 2 · Why?
+                        </label>
+                        <p className="mt-2 text-sm text-slate-400">
+                          Add one or more reasoning blocks. Claim first, then evidence.
+                        </p>
+                      </div>
+
+                      {submissionForm.premises.map((premise, index) => (
+                        <textarea
+                          key={index}
+                          value={premise}
+                          onChange={(event) =>
+                            setSubmissionForm((current) => ({
+                              ...current,
+                              premises: current.premises.map((value, premiseIndex) =>
+                                premiseIndex === index ? event.target.value : value,
+                              ),
+                            }))
+                          }
+                          placeholder={[
+                            'Because...',
+                            'Given that...',
+                            'Evidence shows...',
+                            'Furthermore...',
+                            'Considering...',
+                          ][index]}
+                          className="min-h-20 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
+                        />
+                      ))}
+
+                      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                        <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+                          Step 3 · Reasoning Type
+                        </label>
+                        <p className="mt-2 text-sm text-slate-400">
+                          Tag the type of argument you are making so synthesis can group it correctly.
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {REASONING_TYPE_OPTIONS.map((option) => {
+                            const selected = submissionForm.reasoningTypes.includes(option);
+
+                            return (
+                              <button
+                                key={option}
+                                type="button"
+                                onClick={() =>
+                                  setSubmissionForm((current) => ({
+                                    ...current,
+                                    reasoningTypes: selected
+                                      ? current.reasoningTypes.filter((item) => item !== option)
+                                      : [...current.reasoningTypes, option],
+                                  }))
+                                }
+                                className={`rounded-full border px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] transition ${selected
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'border-slate-700 text-slate-400 hover:border-primary/40'
+                                  }`}
+                              >
+                                {option}
+                              </button>
+                            );
+                          })}
                         </div>
-                      )}
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                        <label className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+                          Step 4 · What Would Change Your Mind?
+                        </label>
+                        <p className="mt-2 text-sm text-slate-400">
+                          State the evidence or condition that would make you reconsider.
+                        </p>
+                        <textarea
+                          value={submissionForm.changeMind}
+                          onChange={(event) =>
+                            setSubmissionForm((current) => ({
+                              ...current,
+                              changeMind: event.target.value,
+                            }))
+                          }
+                          placeholder="What evidence would change your conclusion?"
+                          className="mt-3 min-h-24 w-full rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm outline-none transition focus:border-primary"
+                        />
+                      </div>
+
+                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                          <label className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+                            Step 5 · Confidence
+                          </label>
+                          <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white">
+                            {submissionForm.confidence}/10
+                          </span>
+                        </div>
+                        <input
+                          value={submissionForm.confidence}
+                          onChange={(event) =>
+                            setSubmissionForm((current) => ({
+                              ...current,
+                              confidence: Number(event.target.value),
+                            }))
+                          }
+                          type="range"
+                          min="1"
+                          max="10"
+                          className="h-2 w-full cursor-pointer accent-primary"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => void handleSubmitReasoning()}
+                        disabled={
+                          !submissionForm.conclusion.trim() ||
+                          submissionForm.premises.filter((premise) => premise.trim()).length === 0
+                        }
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Rocket className="h-4 w-4" />
+                        Submit to Noosphere
+                      </button>
+                      <div className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
+                        <Cloud className="mt-0.5 h-4 w-4 text-primary" />
+                        Active reasoning is uploaded to{' '}
+                        {storageStatus.network === 'storacha'
+                          ? 'Storacha'
+                          : 'a local fallback CID layer'}{' '}
+                        immediately.
+                        {storageStatus.network === 'storacha'
+                          ? ' Each submission returns a live CID for the graph and synthesis pipeline.'
+                          : ' Add a Storacha delegation to move hot storage off the browser.'}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-6 text-sm leading-relaxed text-slate-400">
-                      No reasoning node selected yet.
+                  </aside>
+                  <aside className="rounded-3xl border border-slate-800 bg-background-dark/60 p-6 xl:p-8">
+                    <div className="mb-6 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                          Selected Reasoning
+                        </p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          Inspect the full chain, score, and provenance for the highlighted node.
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    {activeSubmission ? (
+                      <div className="space-y-6">
+                        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div>
+                              <p className="text-lg font-bold text-slate-100">
+                                {activeSubmission.contributorName}
+                              </p>
+                              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                                {activeSubmission.walletAddress.slice(0, 12)}...
+                              </p>
+                            </div>
+                            <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                              {Math.round(activeSubmission.qualityScore * 100)}% quality score
+                            </div>
+                          </div>
+                          {activeSubmission.reasoningTypes.length > 0 && (
+                            <div className="mb-4 flex flex-wrap gap-2">
+                              {activeSubmission.reasoningTypes.map((type) => (
+                                <span
+                                  key={type}
+                                  className="rounded-full border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300"
+                                >
+                                  {type}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="space-y-4">
+                            <div className="border-l-2 border-primary pl-4">
+                              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+                                Conclusion
+                              </p>
+                              <p className="text-sm font-medium leading-relaxed text-slate-100">
+                                {activeSubmission.conclusion}
+                              </p>
+                            </div>
+                            {activeSubmission.premises.map((premise, index) => (
+                              <div key={index} className="border-l-2 border-slate-800 pl-4">
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                                  Premise {index + 1}
+                                </p>
+                                <p className="text-sm leading-relaxed text-slate-300">{premise}</p>
+                              </div>
+                            ))}
+                            {activeSubmission.changeMind && (
+                              <div className="border-l-2 border-amber-400 pl-4">
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-400">
+                                  Would Change Mind If
+                                </p>
+                                <p className="text-sm leading-relaxed text-slate-300">
+                                  {activeSubmission.changeMind}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
+                              Confidence
+                            </p>
+                            <p className="mt-2 text-2xl font-bold">{activeSubmission.confidence}/10</p>
+                          </div>
+                          <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
+                              Cluster
+                            </p>
+                            <p className="mt-2 text-sm font-bold text-slate-100">
+                              {activeSubmission.clusterId.replace('cluster-', '')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                            Provenance
+                          </p>
+                          <div className="space-y-3 text-sm">
+                            <div className="flex items-start gap-3">
+                              <Cloud className="mt-0.5 h-4 w-4 text-primary" />
+                              <div>
+                                <p className="font-bold text-slate-100">Reasoning object CID</p>
+                                <p className="break-all font-mono text-xs text-slate-500">
+                                  {activeSubmission.storageCid}
+                                </p>
+                                {activeSubmission.storageGatewayUrl && (
+                                  <a
+                                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-primary"
+                                    href={activeSubmission.storageGatewayUrl}
+                                    rel="noreferrer"
+                                    target="_blank"
+                                  >
+                                    Open object
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <Database className="mt-0.5 h-4 w-4 text-primary" />
+                              <div>
+                                <p className="font-bold text-slate-100">Hot storage layer</p>
+                                <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">
+                                  {activeSubmission.storageNetwork === 'storacha'
+                                    ? 'Storacha'
+                                    : 'Local fallback'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
+                              <div>
+                                <p className="font-bold text-slate-100">Verification mode</p>
+                                <p className="text-xs text-slate-500">
+                                  {
+                                    state.verifications.find(
+                                      (verification) =>
+                                        verification.nullifierHash ===
+                                        activeSubmission.verificationNullifierHash,
+                                    )?.mode
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {activeMetrics.synthesis && (
+                          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+                              Latest Synthesis
+                            </p>
+                            <p className="text-sm leading-relaxed text-slate-300">
+                              {activeMetrics.synthesis.qualityWeightedSummary}
+                            </p>
+                            <button
+                              onClick={() =>
+                                startTransition(() => navigate(`/questions/${activeQuestion.id}/synthesis`))
+                              }
+                              className="mt-4 flex items-center gap-2 text-sm font-bold text-primary"
+                            >
+                              Open full synthesis
+                              <ArrowRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-6 text-sm leading-relaxed text-slate-400">
+                        No reasoning node selected yet.
+                      </div>
+                    )}
                   </aside>
                 </div>
 
@@ -1279,11 +1482,10 @@ export default function App() {
                           key={submission.id}
                           type="button"
                           onClick={() => setSelectedSubmissionId(submission.id)}
-                          className={`w-full rounded-2xl border p-5 text-left transition ${
-                            submission.id === activeSubmission?.id
+                          className={`w-full rounded-2xl border p-5 text-left transition ${submission.id === activeSubmission?.id
                               ? 'border-primary bg-primary/5'
                               : 'border-slate-800 bg-slate-900/60 hover:border-primary/40'
-                          }`}
+                            }`}
                         >
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
@@ -1339,11 +1541,10 @@ export default function App() {
                     {activeMetrics.synthesis ? (
                       <div className="space-y-5">
                         <div
-                          className={`rounded-2xl border p-4 ${
-                            activeMetrics.synthesis.provider === 'gemini'
+                          className={`rounded-2xl border p-4 ${activeMetrics.synthesis.provider === 'gemini'
                               ? 'border-teal-500/30 bg-teal-500/10'
                               : 'border-amber-500/30 bg-amber-500/10'
-                          }`}
+                            }`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-200">
@@ -1435,11 +1636,10 @@ export default function App() {
                     {activeMetrics.synthesis.qualityWeightedSummary}
                   </p> */}
                   <div
-                    className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-xs leading-relaxed ${
-                      activeMetrics.synthesis.provider === 'gemini'
+                    className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-xs leading-relaxed ${activeMetrics.synthesis.provider === 'gemini'
                         ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
                         : 'border-amber-500/30 bg-amber-500/10 text-amber-100'
-                    }`}
+                      }`}
                   >
                     {activeMetrics.synthesis.providerDetail}
                   </div>
@@ -1658,8 +1858,17 @@ export default function App() {
             <h2 className="text-lg font-bold text-slate-100">Noosphere</h2>
           </div>
           <div className="flex flex-wrap justify-center gap-8 text-sm text-slate-500">
-            <a className="hover:text-primary" href="#">Docs</a>
-            <a className="hover:text-primary" href="#">Github</a>
+            <Link className="hover:text-primary" to="/docs">
+              Docs
+            </Link>
+            <a
+              className="hover:text-primary"
+              href="https://github.com/psalmuel01/noosphere"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Github
+            </a>
             <a className="hover:text-primary" href="#">Twitter</a>
             <a className="hover:text-primary" href="#">Discord</a>
           </div>

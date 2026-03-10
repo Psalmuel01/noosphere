@@ -22,6 +22,10 @@ Noosphere is a collective reasoning platform with a React frontend and an Expres
 - Gemini API for synthesis
 - Impulse AI inference API for quality scoring (requires deployment)
 
+## Model Training Snapshot
+
+![Impulse training](model/training.jpg)
+
 ## Run locally
 
 1. Install dependencies:
@@ -56,6 +60,8 @@ IMPULSE_DEPLOYMENT_ID=
 VITE_STORACHA_PROOF=
 VITE_STORACHA_SPACE_DID=
 VITE_WORLD_ID_RP_ID=rp_xxx
+VITE_WORLD_ID_RP_CONTEXT_JSON={"rp_id":"rp_example","nonce":"nonce","created_at":0,"expires_at":0,"signature":"signature"}
+
 ```
 
 If you want to enable the client-side World ID widget, also set:
@@ -63,8 +69,9 @@ If you want to enable the client-side World ID widget, also set:
 ```bash
 VITE_WORLD_ID_APP_ID=app_example
 VITE_WORLD_ID_ACTION=noosphere-submit-reasoning
-VITE_WORLD_ID_RP_CONTEXT_JSON={"rp_id":"rp_example","nonce":"nonce","created_at":0,"expires_at":0,"signature":"signature"}
 ```
+
+The app now fetches a fresh `rp_context` from the backend on demand, so you do not need to keep `VITE_WORLD_ID_RP_CONTEXT_JSON` updated manually. Ensure `RP_SIGNING_KEY` and `VITE_WORLD_ID_RP_ID` are set on the server.
 
 Notes:
 
@@ -72,7 +79,7 @@ Notes:
 - Storacha is used for hot storage and archive publication; archival reaches Filecoin through the Storacha/Filecoin pipeline when the delegation supports it.
 - The backend owns question, submission, and synthesis persistence in `data/noosphere.db`.
 - Predicted quality scores weight synthesis ordering and scale node size in the reasoning graph.
-- Provider request/response payloads are logged on the server console for Storacha, Impulse, and Gemini.
+- API request/response payloads are logged in the browser console for tracing app activity.
 - Official World ID verification still requires a signed RP context.
 - The fallback path is intentional so development can continue without every provider key.
 

@@ -1,4 +1,4 @@
-export type Screen = 'landing' | 'question' | 'synthesis';
+export type Screen = 'landing' | 'question' | 'synthesis' | 'docs';
 
 export type QuestionStatus = 'open' | 'synthesizing' | 'complete';
 export type VerificationMode = 'demo' | 'world-id';
