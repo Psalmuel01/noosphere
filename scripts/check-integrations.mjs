@@ -1,4 +1,5 @@
 import { getEnv } from './lib/env.mjs';
+import { signRequest } from '@worldcoin/idkit/signing';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,33 +21,30 @@ function summarizeStorachaError(error) {
 
 async function checkWorldId() {
   const appId = getEnv('VITE_WORLD_ID_APP_ID');
-  const action = getEnv('VITE_WORLD_ID_ACTION');
-  const raw = getEnv('VITE_WORLD_ID_RP_CONTEXT_JSON');
+  const action = getEnv('VITE_WORLD_ID_ACTION') ?? 'noosphere-submit-reasoning';
+  const rpId = getEnv('VITE_WORLD_ID_RP_ID');
+  const signingKey = getEnv('RP_SIGNING_KEY') ?? getEnv('RP_SIGNING_KEY');
 
-  if (!appId || !action || !raw) {
+  if (!appId || !rpId || !signingKey) {
     return {
       ok: false,
       label: 'World ID',
-      detail: 'Missing one or more VITE world env vars.',
+      detail: 'Missing VITE_WORLD_ID_APP_ID, VITE_WORLD_ID_RP_ID, or RP_SIGNING_KEY.',
     };
   }
 
   try {
-    const context = JSON.parse(raw);
-    const expired = context.expires_at * 1000 < Date.now();
-
+    const { expiresAt } = signRequest(action, signingKey);
     return {
-      ok: !expired,
+      ok: true,
       label: 'World ID',
-      detail: expired
-        ? `rp_context expired at ${new Date(context.expires_at * 1000).toISOString()}`
-        : `rp_context valid until ${new Date(context.expires_at * 1000).toISOString()}`,
+      detail: `RP context signing configured. Example expires at ${new Date(expiresAt * 1000).toISOString()}`,
     };
-  } catch {
+  } catch (error) {
     return {
       ok: false,
       label: 'World ID',
-      detail: 'VITE_WORLD_ID_RP_CONTEXT_JSON is not valid JSON.',
+      detail: error instanceof Error ? error.message : 'Failed to generate rp_context.',
     };
   }
 }

@@ -49,7 +49,7 @@ Backend and AI envs:
 ```bash
 PORT=8787
 NOOSPHERE_ENABLE_DEMO_SEED=false
-VITE_RP_SIGNING_KEY=sk_xxx
+RP_SIGNING_KEY=sk_xxx
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
 IMPULSE_API_BASE_URL=https://api.impulselabs.ai
@@ -60,8 +60,6 @@ IMPULSE_DEPLOYMENT_ID=
 VITE_STORACHA_PROOF=
 VITE_STORACHA_SPACE_DID=
 VITE_WORLD_ID_RP_ID=rp_xxx
-VITE_WORLD_ID_RP_CONTEXT_JSON={"rp_id":"rp_example","nonce":"nonce","created_at":0,"expires_at":0,"signature":"signature"}
-
 ```
 
 If you want to enable the client-side World ID widget, also set:
@@ -95,7 +93,7 @@ For local testing, you can generate a fresh `rp_context` JSON blob with:
 npm run world:rp-context
 ```
 
-This prints the JSON object expected by `VITE_WORLD_ID_RP_CONTEXT_JSON`. It reads `VITE_WORLD_ID_RP_ID` and `VITE_RP_SIGNING_KEY` from `.env.local` or your shell.
+This prints the JSON object expected by `VITE_WORLD_ID_RP_CONTEXT_JSON`. It reads `VITE_WORLD_ID_RP_ID` and `RP_SIGNING_KEY` from `.env.local` or your shell.
 
 To refresh `.env.local` in place with a new signed context:
 

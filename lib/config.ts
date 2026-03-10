@@ -18,6 +18,9 @@ const envSchema = z.object({
   IMPULSE_API_BASE_URL: z.string().optional(),
   IMPULSE_API_KEY: z.string().optional(),
   IMPULSE_DEPLOYMENT_ID: z.string().optional(),
+  RP_SIGNING_KEY: z.string().optional(),
+  VITE_WORLD_ID_RP_ID: z.string().optional(),
+  VITE_WORLD_ID_ACTION: z.string().optional(),
   VITE_STORACHA_PROOF: z.string().optional(),
   VITE_STORACHA_SPACE_DID: z.string().optional(),
 });

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
 import { z } from 'zod';
+import { signRequest } from '@worldcoin/idkit/signing';
 import { env } from '../lib/config';
 import {
   createQuestion,
@@ -55,6 +56,30 @@ const verificationSchema = z.object({
   mode: z.enum(['demo', 'world-id']),
   proof: z.string().nullable().optional(),
 });
+
+function buildRpContext() {
+  const rpId = env.VITE_WORLD_ID_RP_ID;
+  const action = env.VITE_WORLD_ID_ACTION ?? 'noosphere-submit-reasoning';
+  const signingKey = env.RP_SIGNING_KEY ?? process.env.RP_SIGNING_KEY;
+
+  if (!rpId) {
+    throw new Error('Missing VITE_WORLD_ID_RP_ID.');
+  }
+
+  if (!signingKey) {
+    throw new Error('Missing RP_SIGNING_KEY.');
+  }
+
+  const { sig, nonce, createdAt, expiresAt } = signRequest(action, signingKey);
+
+  return {
+    rp_id: rpId,
+    nonce,
+    created_at: createdAt,
+    expires_at: expiresAt,
+    signature: sig,
+  };
+}
 
 function defaultDeadline() {
   return new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
@@ -241,6 +266,16 @@ async function synthesizeQuestion(questionId: string) {
 
 app.get('/api/bootstrap', async (_req, res) => {
   res.json(buildBootstrap());
+});
+
+app.post('/api/world/rp-context', (_req, res) => {
+  try {
+    res.json(buildRpContext());
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : 'Failed to build RP context.',
+    });
+  }
 });
 
 app.get('/api/questions', async (_req, res) => {
