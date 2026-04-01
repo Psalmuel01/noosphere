@@ -699,137 +699,56 @@ export default function App() {
                 <HeroCanvas />
                 <div className="absolute inset-0 stars-bg opacity-30" />
                 <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 nebula-gradient" />
-                <div className={`relative ${shellWidthClass} grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]`}>
-                  <div className="space-y-8">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font- uppercase tracking-[0.25em] text-primary">
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                      </span>
-                      Decentralized reasoning engine.
-                    </div>
-                    <div className="space-y-3">
-                      <h1 className="max-w-4xl text-5xl font-bold leading-tight tracking-tight md:text-7xl">
-                        THE SPHERE OF THOUGHT
-                      </h1>
-                      <p className="max-w-3xl text-lg leading-relaxed text-slate-400">
-                        Move beyond polling and comments. Noosphere captures structured reasoning,
-                        surfaces the strongest arguments, and turns a discussion into a collective
-                        intelligence artifact.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-4">
-                      <button
-                        onClick={() =>
-                          startTransition(() => {
-                            const target = routeQuestionId ?? selectedQuestionId ?? state.questions[0]?.id;
-                            if (target) {
-                              navigate(`/questions/${target}`);
-                            }
-                          })
-                        }
-                        className="flex items-center gap-2 rounded-xl bg-primary px-6 py-4 font-bold text-white shadow-xl shadow-primary/20 transition hover:scale-[1.02]"
-                      >
-                        Explore Live Graph
-                        <Compass className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => startTransition(() => navigate('/ask'))}
-                        className="flex items-center gap-2 rounded-xl border border-slate-700 bg-atmosphere px-6 py-4 font-bold text-slate-100 transition hover:border-primary"
-                      >
-                        Ask a Question
-                        <PlusCircle className="h-5 w-5" />
-                      </button>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      {[
-                        ['Verified humans', `${state.verifications.length}`],
-                        ['Reasoning chains', `${state.submissions.length}`],
-                        ['Completed syntheses', `${state.syntheses.length}`],
-                      ].map(([label, value]) => (
-                        <div
-                          key={label}
-                          className="rounded-[24px] border border-slate-800/80 bg-[linear-gradient(180deg,rgba(15,23,42,0.85),rgba(2,6,23,0.68))] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.18)]"
-                        >
-                          <p className="text-xs uppercase tracking-[0.25em] text-slate-500">{label}</p>
-                          <p className="mt-2 text-3xl font-bold text-slate-100">{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      {[
-                        [
-                          'Structured input',
-                          'People start with a conclusion, then support it with premises and confidence.',
-                        ],
-                        [
-                          'Quality-weighted reasoning',
-                          'Stronger submissions influence the graph and the final synthesis more heavily.',
-                        ],
-                        [
-                          'One clear synthesis',
-                          'Noosphere turns many perspectives into one readable view of consensus and disagreement.',
-                        ],
-                      ].map(([title, body]) => (
-                        <div
-                          key={title}
-                          className="rounded-[24px] border border-slate-800/80 bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.64))] p-5"
-                        >
-                          <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">
-                            {title}
-                          </p>
-                          <p className="mt-3 text-sm leading-relaxed text-slate-400">{body}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <Link
-                      to="/docs"
-                      className="inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:text-primary/80"
-                    >
-                      Read the guide
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
 
-                  <div className="rounded-[34px] border border-slate-800 bg-[linear-gradient(180deg,rgba(2,6,23,0.94),rgba(15,23,42,0.82))] p-7 shadow-[0_40px_120px_rgba(2,6,23,0.38)] backdrop-blur-md">
-                    <div className="mb-6 space-y-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
-                        Start a Session
-                      </p>
-                      <h2 className="text-3xl font-bold">Ask a strong question</h2>
-                      <p className="text-sm leading-relaxed text-slate-400">
-                        Create a session with enough clarity and context for people to produce real
-                        reasoning, not just quick reactions.
-                      </p>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="rounded-[24px] border border-slate-800 bg-slate-950/50 p-5">
-                        <p className="text-sm font-bold text-slate-100">Use the dedicated ask flow</p>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                          Open the full ask page to set the question, deadline, author, and tags in
-                          one focused flow.
+                <div className="min-h-[70vh] flex items-center justify-center">
+                  <div className="space-y-8 text-center">
+                    <div className="mx-auto flex max-w-4xl flex-col items-center animate-float">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.25em] text-primary">
+                        <span className="relative flex h-2 w-2">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                        </span>
+                        Decentralized reasoning engine.
+                      </div>
+
+                      <div className="mt-6 space-y-3">
+                        <h1 className="max-w-4xl text-5xl font-bold leading-tight tracking-tight md:text-7xl">
+                          THE SPHERE OF THOUGHT
+                        </h1>
+
+                        <p className="max-w-3xl text-lg leading-relaxed text-slate-400">
+                          Move beyond polling and comments. Noosphere captures structured reasoning,
+                          surfaces the strongest arguments, and turns a discussion into a collective
+                          intelligence artifact.
                         </p>
+                      </div>
+
+                      <div className="mt-6 flex flex-wrap justify-center gap-4">
+                        <button
+                          onClick={() =>
+                            startTransition(() => {
+                              const target =
+                                routeQuestionId ??
+                                selectedQuestionId ??
+                                state.questions[0]?.id;
+                              if (target) {
+                                navigate(`/questions/${target}`);
+                              }
+                            })
+                          }
+                          className="flex items-center gap-2 rounded-xl bg-primary px-6 py-4 font-bold text-white shadow-xl shadow-primary/20 transition hover:scale-[1.02]"
+                        >
+                          Explore Live Graph
+                          <Compass className="h-5 w-5" />
+                        </button>
+
                         <button
                           onClick={() => startTransition(() => navigate('/ask'))}
-                          className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110"
+                          className="flex items-center gap-2 rounded-xl border border-slate-700 bg-atmosphere px-6 py-4 font-bold text-slate-100 transition hover:border-primary"
                         >
-                          Open Ask Page
-                          <ArrowRight className="h-4 w-4" />
+                          Ask a Question
+                          <PlusCircle className="h-5 w-5" />
                         </button>
-                      </div>
-                      <div className="rounded-[24px] border border-slate-800 bg-slate-950/50 p-5">
-                        <p className="text-sm font-bold text-slate-100">Need examples first?</p>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                          Read the docs to understand what kinds of prompts and submissions produce
-                          the strongest quality scores and best synthesis results.
-                        </p>
-                        <Link
-                          to="/docs#quality-score"
-                          className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary"
-                        >
-                          Read the scoring guide
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
                       </div>
                     </div>
                   </div>
@@ -842,7 +761,7 @@ export default function App() {
                     <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-primary">
                       Featured Sessions
                     </p>
-                    <h2 className="text-3xl font-bold tracking-tight">A few active questions to explore</h2>
+                    {/* <p className="text-3xl font-bold tracking-tight">A few active questions to explore</p> */}
                   </div>
                   <div className="flex items-center gap-3">
                     <Link
@@ -1824,7 +1743,7 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
+      </main >
 
       <footer className="mt-auto border-t border-slate-800 bg-background-dark px-6 py-12">
         <div className={`${shellWidthClass} flex flex-col items-center justify-between gap-8 md:flex-row`}>
@@ -1850,7 +1769,7 @@ export default function App() {
           </p>
         </div>
       </footer>
-    </div>
+    </div >
   );
 }
 
