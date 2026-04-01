@@ -1,5 +1,7 @@
 # Noosphere
 
+> See Demo Video [here](https://youtu.be/hlXiUaunrlY)
+
 Noosphere is a collective reasoning platform with a React frontend and an Express + SQLite backend. It lets users:
 
 - create deliberation questions with deadlines
