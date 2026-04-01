@@ -7,7 +7,9 @@ dotenv.config({ path: '.env.local', override: false });
 dotenv.config();
 
 const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).optional(),
   PORT: z.coerce.number().default(8787),
+  DATABASE_PATH: z.string().optional(),
   NOOSPHERE_ENABLE_DEMO_SEED: z
     .string()
     .optional()
@@ -29,8 +31,12 @@ const envSchema = z.object({
 export const env = envSchema.parse(process.env);
 
 export const dataDir = path.resolve(process.cwd(), 'data');
-export const databasePath = path.join(dataDir, 'noosphere.db');
+export const databasePath = env.DATABASE_PATH
+  ? path.resolve(process.cwd(), env.DATABASE_PATH)
+  : path.join(dataDir, 'noosphere.db');
 
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+const databaseDir = path.dirname(databasePath);
+
+if (!fs.existsSync(databaseDir)) {
+  fs.mkdirSync(databaseDir, { recursive: true });
 }

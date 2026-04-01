@@ -67,12 +67,14 @@ export function WorldIdVerificationButton({
   questionId,
   contributorName,
   walletAddress,
+  verifiedMode,
   disabled,
   onVerified,
 }: {
   questionId: string;
   contributorName: string;
   walletAddress: string;
+  verifiedMode?: VerificationMode | null;
   disabled?: boolean;
   onVerified: (mode: VerificationMode, proof?: string | null) => Promise<void> | void;
 }) {
@@ -122,7 +124,7 @@ export function WorldIdVerificationButton({
 
     const timeoutId = window.setTimeout(() => {
       setFallbackMessage(null);
-    }, 6000);
+    }, 5000);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -280,7 +282,11 @@ export function WorldIdVerificationButton({
           className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <ShieldCheck className="h-4 w-4" />
-          {isWorking ? 'Verifying...' : 'Verify Human (Demo)'}
+          {verifiedMode === 'demo'
+            ? 'Verified with Noosphere Demo'
+            : isWorking
+              ? 'Verifying...'
+              : 'Verify Human (Demo)'}
         </button>
         <p className="text-[11px] leading-relaxed text-slate-500">
           World ID keys are missing, so demo verification is active.
@@ -298,7 +304,11 @@ export function WorldIdVerificationButton({
           className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Sparkles className="h-4 w-4" />
-          {isWorking ? 'Preparing...' : 'Verify with World ID'}
+          {verifiedMode === 'world-id'
+            ? 'Verified with World ID'
+            : isWorking
+              ? 'Preparing...'
+              : 'Verify with World ID'}
         </button>
         <button
           type="button"
@@ -311,7 +321,7 @@ export function WorldIdVerificationButton({
           }`}
         >
           <ShieldCheck className="h-4 w-4" />
-          Continue with Noosphere Demo
+          {verifiedMode === 'demo' ? 'Verified with Noosphere Demo' : 'Continue with Noosphere Demo'}
         </button>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-slate-500">

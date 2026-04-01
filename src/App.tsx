@@ -78,6 +78,10 @@ const emptySubmissionForm: SubmissionFormState = {
 
 const shellWidthClass = 'mx-auto w-full max-w-[1680px]';
 
+function normalizeIdentityValue(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function formatRelativeDeadline(deadline: string) {
   const delta = new Date(deadline).getTime() - Date.now();
   const hours = Math.round(Math.abs(delta) / (1000 * 60 * 60));
@@ -283,11 +287,15 @@ export default function App() {
     null;
   const activeVerification =
     activeQuestion &&
+    submissionForm.contributorName &&
     submissionForm.walletAddress &&
     state.verifications.find(
       (verification) =>
         verification.questionId === activeQuestion.id &&
-        verification.walletAddress.toLowerCase() === submissionForm.walletAddress.trim().toLowerCase(),
+        normalizeIdentityValue(verification.contributorName) ===
+          normalizeIdentityValue(submissionForm.contributorName) &&
+        normalizeIdentityValue(verification.walletAddress) ===
+          normalizeIdentityValue(submissionForm.walletAddress),
     );
 
   useEffect(() => {
@@ -1240,11 +1248,11 @@ export default function App() {
                             <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
                               Verification Status
                             </p>
-                            <p className="mt-1 text-sm text-slate-400">
+                            {/* <p className="mt-1 text-sm text-slate-400">
                               {activeVerification
                                 ? `Verified via ${activeVerification.mode === 'demo' ? 'demo mode' : 'World ID'}`
                                 : 'Optional step for demo identity checks'}
-                            </p>
+                            </p> */}
                           </div>
                           {activeVerification && (
                             <div className="flex items-center gap-2 rounded-full bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-green-400">
@@ -1258,8 +1266,11 @@ export default function App() {
                             questionId={activeQuestion.id}
                             contributorName={submissionForm.contributorName}
                             walletAddress={submissionForm.walletAddress}
+                            verifiedMode={activeVerification?.mode ?? null}
                             disabled={
-                              !submissionForm.contributorName.trim() || !submissionForm.walletAddress.trim()
+                              !submissionForm.contributorName.trim() ||
+                              !submissionForm.walletAddress.trim() ||
+                              Boolean(activeVerification)
                             }
                             onVerified={handleVerify}
                           />

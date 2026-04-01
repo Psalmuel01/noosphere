@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: noosphere
+    runtime: node
+    plan: starter
+    autoDeployTrigger: commit
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    numInstances: 1
+    disk:
+      name: noosphere-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/noosphere.db
+      - key: NOOSPHERE_ENABLE_DEMO_SEED
+        value: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: IMPULSE_API_BASE_URL
+        value: https://api.impulselabs.ai
+      - key: IMPULSE_INFERENCE_BASE_URL
+        value: https://inference.impulselabs.ai
+      - key: WORLD_ID_VERIFY_BASE_URL
+        value: https://developer.world.org
+      - key: VITE_WORLD_ID_ENVIRONMENT
+        value: production
+      - key: VITE_WORLD_ID_ACTION
+        value: noosphere-submit-reasoning
+      - key: RP_SIGNING_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: IMPULSE_API_KEY
+        sync: false
+      - key: IMPULSE_DEPLOYMENT_ID
+        sync: false
+      - key: VITE_STORACHA_PROOF
+        sync: false
+      - key: VITE_STORACHA_SPACE_DID
+        sync: false
+      - key: VITE_WORLD_ID_RP_ID
+        sync: false
+      - key: VITE_WORLD_ID_APP_ID
+        sync: false

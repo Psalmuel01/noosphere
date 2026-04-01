@@ -48,6 +48,50 @@ npm run dev
 The backend listens on `http://localhost:8787` and the frontend runs on `http://localhost:3000`.
 If the app looks blank or API-backed features are failing locally, make sure the backend is running first.
 
+## Production deployment
+
+Noosphere is ready to deploy as a single backend service with a persistent disk:
+
+1. Build the frontend:
+   `npm run build`
+2. Start the production server:
+   `npm start`
+3. Mount a persistent volume and point `DATABASE_PATH` at it.
+4. Start the server after the build completes.
+
+Recommended production shape:
+
+- one backend instance only
+- one persistent disk
+- SQLite file stored on that disk
+- built frontend served by the same Express server
+
+Recommended database env:
+
+```bash
+DATABASE_PATH=/var/lib/noosphere/noosphere.db
+```
+
+Use a host with persistent storage such as Render, Fly.io, Railway with volumes, or a VPS. Avoid serverless platforms for the current SQLite setup.
+
+Health check endpoint:
+
+```bash
+GET /healthz
+```
+
+Detailed deployment steps are in [DEPLOYMENT.md](/Users/sam/Desktop/Projects/NooSphere/DEPLOYMENT.md).
+
+### Render quick start
+
+If you want to use Render, this repo now includes [render.yaml](/Users/sam/Desktop/Projects/NooSphere/render.yaml).
+
+1. Push the repo to GitHub.
+2. Create a new Blueprint in Render from the repo.
+3. Render will create one web service with a persistent disk mounted at `/var/data`.
+4. Add the missing secret environment variables in the Render dashboard.
+5. Deploy.
+
 ## Environment
 
 The app is still usable without provider keys:
@@ -61,6 +105,7 @@ Backend and AI envs:
 
 ```bash
 PORT=8787
+DATABASE_PATH=data/noosphere.db
 NOOSPHERE_ENABLE_DEMO_SEED=false
 RP_SIGNING_KEY=sk_xxx
 GEMINI_API_KEY=
@@ -88,7 +133,7 @@ Notes:
 
 - Public/browser envs use `VITE_*`. Server secrets do not. Do not put Gemini, Impulse, or signing secrets behind `VITE_*`, because that exposes them to the browser.
 - Storacha is used for hot storage and archive publication; archival reaches Filecoin through the Storacha/Filecoin pipeline when the delegation supports it.
-- The backend owns question, submission, and synthesis persistence in `data/noosphere.db`.
+- The backend owns question, submission, and synthesis persistence in the path defined by `DATABASE_PATH` or `data/noosphere.db` by default.
 - Predicted quality scores weight synthesis ordering and scale node size in the reasoning graph.
 - API request/response payloads are logged in the browser console for tracing app activity.
 - Official World ID verification still requires a signed RP context.
@@ -98,17 +143,19 @@ Notes:
 
 See [plan.md](/Users/sam/Desktop/Projects/NooSphere/plan.md) for next steps and remaining work.
 
-## Generate World RP Context
+## World ID note
 
-For local testing, you can generate a fresh `rp_context` JSON blob with:
+For local testing, you can still generate a fresh `rp_context` JSON blob with:
 
 ```bash
 npm run world:rp-context
 ```
 
-This prints the JSON object expected by `VITE_WORLD_ID_RP_CONTEXT_JSON`. It reads `VITE_WORLD_ID_RP_ID` and `RP_SIGNING_KEY` from `.env.local` or your shell.
+This prints a signed context using `VITE_WORLD_ID_RP_ID` and `RP_SIGNING_KEY` from `.env.local` or your shell.
 
-To refresh `.env.local` in place with a new signed context:
+The production app does not rely on `VITE_WORLD_ID_RP_CONTEXT_JSON`; it requests a fresh signed context from the backend at runtime.
+
+If you still want to refresh `.env.local` in place with a generated value:
 
 ```bash
 npm run world:refresh-env

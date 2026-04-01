@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import { signRequest } from '@worldcoin/idkit/signing';
@@ -273,6 +274,14 @@ app.get('/api/bootstrap', async (_req, res) => {
   res.json(buildBootstrap());
 });
 
+app.get('/healthz', (_req, res) => {
+  res.json({
+    ok: true,
+    service: 'noosphere',
+    databasePath: env.DATABASE_PATH ?? 'data/noosphere.db',
+  });
+});
+
 app.post('/api/world/rp-context', (_req, res) => {
   try {
     res.json(buildRpContext());
@@ -443,8 +452,8 @@ app.post('/api/admin/reset', async (_req, res) => {
   res.json(buildBootstrap());
 });
 
-if (process.env.NODE_ENV === 'production') {
-  const distPath = path.resolve(process.cwd(), 'dist');
+const distPath = path.resolve(process.cwd(), 'dist');
+if (fs.existsSync(path.join(distPath, 'index.html'))) {
   app.use(express.static(distPath));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
