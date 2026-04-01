@@ -24,156 +24,142 @@ export function CreateQuestionPage({
   const canSubmit = value.text.trim() && value.description.trim();
 
   return (
-    <div className="relative mx-auto w-full max-w-[1380px] overflow-hidden px-6 py-16 md:px-12">
-      <div className="pointer-events-none absolute left-0 top-10 h-56 w-56 rounded-full bg-primary/12 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-36 h-80 w-80 rounded-full bg-cyan-400/8 blur-3xl" />
+    <div className="relative mx-auto w-full max-w-[1400px] px-6 py-16 md:px-12">
+      <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
 
-      <div className="relative grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(470px,0.85fr)]">
-        <section className="space-y-8">
+        {/* Left — supporting context, visually subordinate */}
+        <aside className="space-y-6 pt-1">
           <button
             onClick={onBack}
-            className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-800 px-4 text-sm font-bold text-slate-300 transition hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-800 px-4 py-2.5 text-sm font-medium text-slate-400 transition hover:border-primary hover:text-primary"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to questions
+            Back to home
           </button>
 
-          <div className="space-y-5">
+          <div className="space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-primary">
-              <PlusCircle className="h-3.5 w-3.5" />
+              <PlusCircle className="h-3 w-3" />
               New Session
             </div>
-            <h1 className="max-w-4xl text-5xl font-bold leading-tight tracking-tight text-slate-50 md:text-6xl">
+            <h1 className="text-2xl font-semibold leading-snug tracking-tight text-slate-100">
               Open a question worth thinking through
             </h1>
-            <p className="max-w-3xl text-lg leading-relaxed text-slate-400">
-              Strong Noosphere sessions begin with a sharp prompt. Frame the question well, give
-              people the right context, and the reasoning quality will be noticeably better.
+            <p className="text-sm leading-relaxed text-slate-500">
+              Strong sessions begin with a sharp prompt. Frame it well and reasoning quality will noticeably improve.
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <ul className="space-y-3">
             {[
-              ['Ask one thing', 'Keep the question focused enough that people can take a real position.'],
-              ['Set the frame', 'Use the description to request tradeoffs, evidence, and reasoning style.'],
-              ['Go live fast', 'Once created, the session is immediately ready for responses and aggregation.'],
+              ['Ask one thing', 'Keep the question focused so contributors can take a real position.'],
+              ['Set the frame', 'Request tradeoffs, evidence, and reasoning style in the description.'],
+              ['Go live fast', 'Sessions are ready for responses immediately after creation.'],
             ].map(([title, body]) => (
-              <div
-                key={title}
-                className="rounded-[24px] border border-slate-800/80 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.76))] p-5 shadow-[0_24px_70px_rgba(2,6,23,0.2)]"
-              >
-                <p className="text-sm font-bold text-slate-100">{title}</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{body}</p>
-              </div>
+              <li key={title} className="flex gap-3">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
+                <div>
+                  <p className="text-sm font-medium text-slate-300">{title}</p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-slate-500">{body}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
 
-          <div className="rounded-[30px] border border-slate-800 bg-[linear-gradient(135deg,rgba(15,23,42,0.95),rgba(30,41,59,0.78))] p-6 shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">
-                  Example Prompt
-                </p>
-                <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
-                  The best prompts create room for real disagreement without becoming vague.
-                </p>
-              </div>
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
-                Strong Setup
-              </span>
-            </div>
-            <div className="mt-5 rounded-[24px] border border-primary/15 bg-slate-950/55 p-6">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-primary">
-                Should frontier AI safety standards be coordinated globally?
-              </p>
-              <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                Ask contributors to reason about international coordination, enforcement problems,
-                and the tradeoff between speed and safety. That framing encourages thoughtful,
-                structured disagreement instead of shallow reactions.
-              </p>
-            </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+              Example prompt
+            </p>
+            <p className="text-sm font-medium text-primary/80">
+              Should frontier AI safety standards be coordinated globally?
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              Ask contributors to reason about international coordination, enforcement problems,
+              and the tradeoff between speed and safety.
+            </p>
           </div>
-        </section>
+        </aside>
 
-        <section className="relative rounded-[34px] border border-slate-800 bg-[linear-gradient(180deg,rgba(2,6,23,0.94),rgba(15,23,42,0.84))] p-7 shadow-[0_40px_120px_rgba(2,6,23,0.38)] backdrop-blur-md">
+        {/* Right — the form, visually dominant */}
+        <main className="relative rounded-[28px] border border-slate-800 bg-slate-950/80 p-7 shadow-[0_40px_120px_rgba(2,6,23,0.38)] backdrop-blur-md">
           <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
-          <div className="mb-6 space-y-3">
+          <div className="mb-6 space-y-1.5">
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
               Launch a Deliberation
             </p>
-            <h2 className="text-3xl font-bold text-slate-100">Create a reasoning session</h2>
-            <p className="text-sm leading-relaxed text-slate-400">
+            <h2 className="text-3xl font-semibold text-slate-100">Create a reasoning session</h2>
+            <p className="text-md text-slate-400">
               Keep the prompt tight, the context useful, and the deadline realistic.
             </p>
           </div>
 
           <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
                 Question
               </label>
               <input
                 value={value.text}
-                onChange={(event) => onChange('text', event.target.value)}
+                onChange={(e) => onChange('text', e.target.value)}
                 placeholder="What question should people reason about?"
-                className="h-12 w-full rounded-2xl border border-slate-800 bg-slate-900/75 px-4 text-sm outline-none transition focus:border-primary"
+                className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900/75 px-4 text-sm text-slate-100 outline-none placeholder:text-slate-600 transition focus:border-primary"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
                 Context
               </label>
               <textarea
                 value={value.description}
-                onChange={(event) => onChange('description', event.target.value)}
+                onChange={(e) => onChange('description', e.target.value)}
                 placeholder="Give context. What tradeoffs, evidence, or kinds of reasoning do you want contributors to focus on?"
-                className="min-h-36 w-full rounded-2xl border border-slate-800 bg-slate-900/75 p-4 text-sm outline-none transition focus:border-primary"
+                className="min-h-32 w-full rounded-xl border border-slate-800 bg-slate-900/75 p-4 text-sm text-slate-100 outline-none placeholder:text-slate-600 transition focus:border-primary"
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
                   Creator
                 </label>
                 <input
                   value={value.creatorName}
-                  onChange={(event) => onChange('creatorName', event.target.value)}
+                  onChange={(e) => onChange('creatorName', e.target.value)}
                   placeholder="Your name (optional)"
-                  className="h-12 w-full rounded-2xl border border-slate-800 bg-slate-900/75 px-4 text-sm outline-none transition focus:border-primary"
+                  className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900/75 px-4 text-md text-slate-100 outline-none placeholder:text-slate-600 transition focus:border-primary"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
                   Deadline
                 </label>
                 <input
                   type="datetime-local"
                   value={value.deadline}
-                  onChange={(event) => onChange('deadline', event.target.value)}
-                  className="h-12 w-full rounded-2xl border border-slate-800 bg-slate-900/75 px-4 text-sm outline-none transition focus:border-primary"
+                  onChange={(e) => onChange('deadline', e.target.value)}
+                  className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900/75 px-4 text-md text-slate-100 outline-none transition focus:border-primary"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
                 Tags
               </label>
               <input
                 value={value.tags}
-                onChange={(event) => onChange('tags', event.target.value)}
+                onChange={(e) => onChange('tags', e.target.value)}
                 placeholder="Tags, comma separated (optional)"
-                className="h-12 w-full rounded-2xl border border-slate-800 bg-slate-900/75 px-4 text-sm outline-none transition focus:border-primary"
+                className="h-11 w-full rounded-xl border border-slate-800 bg-slate-900/75 px-4 text-md text-slate-100 outline-none placeholder:text-slate-600 transition focus:border-primary"
               />
             </div>
 
             <button
               onClick={onSubmit}
               disabled={isCreating || !canSubmit}
-              className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 font-bold text-white shadow-[0_18px_48px_rgba(100,103,242,0.3)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-md font-bold text-white shadow-[0_18px_48px_rgba(100,103,242,0.3)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isCreating ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -183,17 +169,17 @@ export function CreateQuestionPage({
               {isCreating ? 'Opening Session...' : 'Open Session'}
             </button>
 
-            <div className="rounded-[24px] border border-slate-800 bg-slate-900/55 p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
+            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
                 What happens next
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-400">
                 After creation, contributors can verify, submit structured reasoning, and watch the
                 graph start to form immediately.
               </p>
             </div>
           </div>
-        </section>
+        </main>
       </div>
     </div>
   );
