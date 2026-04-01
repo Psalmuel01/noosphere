@@ -30,10 +30,23 @@ Noosphere is a collective reasoning platform with a React frontend and an Expres
 
 1. Install dependencies:
    `npm install`
-2. Start the frontend and backend together:
-   `npm run dev`
-3. Build for production:
+2. Start the backend first:
+   `npm run server:start`
+3. In a second terminal, start the frontend:
+   `npm run client:dev`
+4. Open the app in your browser:
+   `http://localhost:3000`
+5. Build for production:
    `npm run build`
+
+You can also start both processes together with:
+
+```bash
+npm run dev
+```
+
+The backend listens on `http://localhost:8787` and the frontend runs on `http://localhost:3000`.
+If the app looks blank or API-backed features are failing locally, make sure the backend is running first.
 
 ## Environment
 

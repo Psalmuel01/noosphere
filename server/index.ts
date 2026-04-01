@@ -57,6 +57,11 @@ const verificationSchema = z.object({
   proof: z.string().nullable().optional(),
 });
 
+const worldVerifySchema = z.object({
+  idkitResponse: z.record(z.string(), z.any()),
+  signal: z.string().optional(),
+});
+
 function buildRpContext() {
   const rpId = env.VITE_WORLD_ID_RP_ID;
   const action = env.VITE_WORLD_ID_ACTION ?? 'noosphere-submit-reasoning';
@@ -274,6 +279,57 @@ app.post('/api/world/rp-context', (_req, res) => {
   } catch (error) {
     res.status(400).json({
       error: error instanceof Error ? error.message : 'Failed to build RP context.',
+    });
+  }
+});
+
+app.post('/api/world/verify', async (req, res) => {
+  let input: z.infer<typeof worldVerifySchema>;
+
+  try {
+    input = worldVerifySchema.parse(req.body);
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid verification payload.' });
+    return;
+  }
+
+  const rpId = env.VITE_WORLD_ID_RP_ID;
+  if (!rpId) {
+    res.status(400).json({ error: 'Missing VITE_WORLD_ID_RP_ID.' });
+    return;
+  }
+
+  if (input.signal) {
+    const providedSignal = String((input.idkitResponse as any).signal ?? '');
+    if (providedSignal && providedSignal !== input.signal) {
+      res.status(400).json({ error: 'World ID signal mismatch.' });
+      return;
+    }
+  }
+
+  const baseUrl = env.WORLD_ID_VERIFY_BASE_URL ?? 'https://developer.world.org';
+  const url = `${baseUrl.replace(/\/$/, '')}/api/v4/verify/${rpId}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input.idkitResponse),
+    });
+
+    const payloadText = await response.text();
+    if (!response.ok) {
+      res.status(response.status).json({
+        error: 'World ID verification failed.',
+        detail: payloadText,
+      });
+      return;
+    }
+
+    res.json(payloadText ? JSON.parse(payloadText) : { success: true });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'World ID verification failed.',
     });
   }
 });

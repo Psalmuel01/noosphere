@@ -237,7 +237,25 @@ export function useNoosphere() {
 
   async function verifyParticipant(draft: VerificationDraft) {
     const payload = `${draft.questionId}:${draft.walletAddress}:${draft.contributorName}`;
-    const nullifierHash = `wid_${(await createHexDigest(payload)).slice(0, 20)}`;
+    let nullifierHash = `wid_${(await createHexDigest(payload)).slice(0, 20)}`;
+
+    if (draft.mode === 'world-id' && draft.proof) {
+      const idkitResponse = JSON.parse(draft.proof) as {
+        nullifier_hash?: string;
+        nullifier?: string;
+        responses?: Array<{ nullifier?: string }>;
+      };
+
+      const proofNullifier =
+        idkitResponse.nullifier_hash ??
+        idkitResponse.nullifier ??
+        idkitResponse.responses?.[0]?.nullifier;
+
+      if (proofNullifier) {
+        nullifierHash = proofNullifier;
+      }
+    }
+
     const verification: VerificationRecord = {
       questionId: draft.questionId,
       contributorName: draft.contributorName.trim(),

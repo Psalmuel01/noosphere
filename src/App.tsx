@@ -181,7 +181,7 @@ function QuestionCard({
           </span>
         ))}
       </div>
-      <div className="mt-auto space-y-4">
+      <div className="mt-auto space-y-3">
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
             <p className="mb-1 uppercase tracking-[0.2em] text-slate-500">Humans</p>
@@ -553,7 +553,7 @@ export default function App() {
                       </span>
                       Decentralized reasoning engine.
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <h1 className="max-w-4xl text-5xl font-bold leading-tight tracking-tight md:text-7xl">
                         THE SPHERE OF THOUGHT
                       </h1>
@@ -623,8 +623,8 @@ export default function App() {
                           >
                             <span
                               className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] ${status.ok
-                                  ? 'bg-teal-500/10 text-teal-400'
-                                  : 'bg-amber-500/10 text-amber-400'
+                                ? 'bg-teal-500/10 text-teal-400'
+                                : 'bg-amber-500/10 text-amber-400'
                                 }`}
                             >
                               {status.label}
@@ -651,7 +651,7 @@ export default function App() {
                         Create a question and start collecting structured reasoning immediately.
                       </p>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <input
                         value={questionDraft.text}
                         onChange={(event) =>
@@ -790,7 +790,7 @@ export default function App() {
             >
               {/* Header */}
               <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <span className="h-px w-6 bg-primary" />
                     <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-primary">
@@ -922,7 +922,7 @@ export default function App() {
                 </div>
 
                 {/* Sidebar */}
-                <aside className="space-y-4">
+                <aside className="space-y-3">
                   <div className="rounded-3xl border border-primary/20 bg-primary/5 p-6">
                     <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Quick Start</p>
                     <div className="space-y-3">
@@ -1054,7 +1054,7 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <input
                         value={submissionForm.contributorName}
                         onChange={(event) =>
@@ -1304,7 +1304,7 @@ export default function App() {
                               ))}
                             </div>
                           )}
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             <div className="border-l-2 border-primary pl-4">
                               <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
                                 Conclusion
@@ -1476,15 +1476,15 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {activeMetrics.submissions.map((submission) => (
                         <button
                           key={submission.id}
                           type="button"
                           onClick={() => setSelectedSubmissionId(submission.id)}
                           className={`w-full rounded-2xl border p-5 text-left transition ${submission.id === activeSubmission?.id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-slate-800 bg-slate-900/60 hover:border-primary/40'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-slate-800 bg-slate-900/60 hover:border-primary/40'
                             }`}
                         >
                           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1542,8 +1542,8 @@ export default function App() {
                       <div className="space-y-5">
                         <div
                           className={`rounded-2xl border p-4 ${activeMetrics.synthesis.provider === 'gemini'
-                              ? 'border-teal-500/30 bg-teal-500/10'
-                              : 'border-amber-500/30 bg-amber-500/10'
+                            ? 'border-teal-500/30 bg-teal-500/10'
+                            : 'border-amber-500/30 bg-amber-500/10'
                             }`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1637,8 +1637,8 @@ export default function App() {
                   </p> */}
                   <div
                     className={`inline-flex max-w-3xl rounded-2xl border px-4 py-3 text-xs leading-relaxed ${activeMetrics.synthesis.provider === 'gemini'
-                        ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
-                        : 'border-amber-500/30 bg-amber-500/10 text-amber-100'
+                      ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
+                      : 'border-amber-500/30 bg-amber-500/10 text-amber-100'
                       }`}
                   >
                     {activeMetrics.synthesis.providerDetail}
@@ -1722,7 +1722,7 @@ export default function App() {
               </section>
 
               <div className="grid gap-8 lg:grid-cols-[0.55fr_0.45fr]">
-                <section className="space-y-4">
+                <section className="space-y-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
                       Points of Consensus
@@ -1758,12 +1758,12 @@ export default function App() {
                   </div>
                 </section>
 
-                <section className="space-y-4">
+                <section className="space-y-3">
                   <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6">
                     <p className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-slate-500">
                       Provenance and Archive
                     </p>
-                    <div className="space-y-4 text-sm">
+                    <div className="space-y-3 text-sm">
                       <div className="flex items-start gap-3">
                         <Database className="mt-0.5 h-4 w-4 text-primary" />
                         <div>
