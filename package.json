@@ -8,7 +8,7 @@
     "client:dev": "vite --port=3000 --host=0.0.0.0",
     "server:dev": "node --watch --import tsx server/index.ts",
     "server:start": "node --import tsx server/index.ts",
-    "start": "NODE_ENV=production node --import tsx server/index.ts",
+    "start": "node --import tsx server/index.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",

@@ -455,7 +455,7 @@ app.post('/api/admin/reset', async (_req, res) => {
 const distPath = path.resolve(process.cwd(), 'dist');
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
   app.use(express.static(distPath));
-  app.get('*', (_req, res) => {
+  app.get(/.*/, (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
