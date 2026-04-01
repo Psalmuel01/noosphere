@@ -21,9 +21,7 @@ import {
   ExternalLink,
   Eye,
   Filter,
-  Focus,
-  Minus,
-  Plus,
+  LoaderCircle,
   PlusCircle,
   Rocket,
   Search,
@@ -235,6 +233,15 @@ export default function App() {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCreatingQuestion, setIsCreatingQuestion] = useState(false);
+  const [isSubmittingReasoning, setIsSubmittingReasoning] = useState(false);
+  const [isVerifyingIdentity, setIsVerifyingIdentity] = useState(false);
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+  const [notice, setNotice] = useState<{
+    tone: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
   const [questionDraft, setQuestionDraft] = useState({
     text: '',
     description: '',
@@ -291,47 +298,88 @@ export default function App() {
 
   async function handleCreateQuestion() {
     if (!questionDraft.text.trim() || !questionDraft.description.trim()) {
+      setNotice({
+        tone: 'error',
+        message: 'Add a question title and description before opening a session.',
+      });
       return;
     }
 
-    const question = await createQuestion({
-      text: questionDraft.text,
-      description: questionDraft.description,
-      creatorName: questionDraft.creatorName,
-      deadline: questionDraft.deadline,
-      tags: questionDraft.tags
-        .split(',')
-        .map((tag) => tag.trim().toLowerCase())
-        .filter(Boolean)
-        .slice(0, 5),
-    });
+    setIsCreatingQuestion(true);
+    setNotice({ tone: 'info', message: 'Creating your reasoning session...' });
 
-    setQuestionDraft({
-      text: '',
-      description: '',
-      creatorName: '',
-      deadline: '',
-      tags: '',
-    });
+    try {
+      const question = await createQuestion({
+        text: questionDraft.text,
+        description: questionDraft.description,
+        creatorName: questionDraft.creatorName,
+        deadline: questionDraft.deadline,
+        tags: questionDraft.tags
+          .split(',')
+          .map((tag) => tag.trim().toLowerCase())
+          .filter(Boolean)
+          .slice(0, 5),
+      });
 
-    startTransition(() => {
-      setSelectedQuestionId(question.id);
-      navigate(`/questions/${question.id}`);
-    });
+      setQuestionDraft({
+        text: '',
+        description: '',
+        creatorName: '',
+        deadline: '',
+        tags: '',
+      });
+
+      setNotice({ tone: 'success', message: 'Session created. Opening it now...' });
+      startTransition(() => {
+        setSelectedQuestionId(question.id);
+        navigate(`/questions/${question.id}`);
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to create the session.',
+      });
+    } finally {
+      setIsCreatingQuestion(false);
+    }
   }
 
   async function handleVerify(mode: 'demo' | 'world-id', proof?: string | null) {
     if (!activeQuestion || !submissionForm.contributorName.trim() || !submissionForm.walletAddress.trim()) {
+      setNotice({
+        tone: 'error',
+        message: 'Add a contributor name and wallet address before verifying.',
+      });
       return;
     }
 
-    await verifyParticipant({
-      questionId: activeQuestion.id,
-      contributorName: submissionForm.contributorName,
-      walletAddress: submissionForm.walletAddress,
-      mode,
-      proof,
+    setIsVerifyingIdentity(true);
+    setNotice({
+      tone: 'info',
+      message: mode === 'world-id' ? 'Verifying with World ID...' : 'Running demo verification...',
     });
+
+    try {
+      await verifyParticipant({
+        questionId: activeQuestion.id,
+        contributorName: submissionForm.contributorName,
+        walletAddress: submissionForm.walletAddress,
+        mode,
+        proof,
+      });
+      setNotice({
+        tone: 'success',
+        message: mode === 'world-id' ? 'World ID verification complete.' : 'Demo verification complete.',
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Verification failed.',
+      });
+      throw error;
+    } finally {
+      setIsVerifyingIdentity(false);
+    }
   }
 
   async function handleSubmitReasoning() {
@@ -350,16 +398,29 @@ export default function App() {
       confidence: submissionForm.confidence,
     };
 
-    const submission = await submitReasoning(draft);
-    setSelectedSubmissionId(submission.id);
-    setSubmissionForm((current) => ({
-      ...current,
-      premises: ['', '', '', '', ''],
-      conclusion: '',
-      reasoningTypes: [],
-      changeMind: '',
-      confidence: 7,
-    }));
+    setIsSubmittingReasoning(true);
+    setNotice({ tone: 'info', message: 'Submitting reasoning and updating the graph...' });
+
+    try {
+      const submission = await submitReasoning(draft);
+      setSelectedSubmissionId(submission.id);
+      setSubmissionForm((current) => ({
+        ...current,
+        premises: ['', '', '', '', ''],
+        conclusion: '',
+        reasoningTypes: [],
+        changeMind: '',
+        confidence: 7,
+      }));
+      setNotice({ tone: 'success', message: 'Reasoning submitted and added to the session.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to submit reasoning.',
+      });
+    } finally {
+      setIsSubmittingReasoning(false);
+    }
   }
 
   async function handleRunSynthesis() {
@@ -367,113 +428,154 @@ export default function App() {
       return;
     }
 
-    await runSynthesis(activeQuestion.id);
-    startTransition(() => {
-      navigate(`/questions/${activeQuestion.id}/synthesis`);
-    });
+    setNotice({ tone: 'info', message: 'Aggregating submissions into a synthesis...' });
+
+    try {
+      await runSynthesis(activeQuestion.id);
+      setNotice({ tone: 'success', message: 'Synthesis ready.' });
+      startTransition(() => {
+        navigate(`/questions/${activeQuestion.id}/synthesis`);
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Aggregation failed.',
+      });
+    }
   }
 
   function handleDownloadSynthesis(synthesis: SynthesisOutput, question: Question) {
-    const doc = new jsPDF({
-      unit: 'pt',
-      format: 'a4',
-    });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 48;
-    const contentWidth = pageWidth - margin * 2;
-    let y = margin;
+    setIsDownloadingReport(true);
 
-    const ensureSpace = (height = 24) => {
-      if (y + height <= pageHeight - margin) {
-        return;
-      }
-
-      doc.addPage();
-      y = margin;
-    };
-
-    const addWrappedText = (
-      text: string,
-      options: { size?: number; color?: [number, number, number]; weight?: 'normal' | 'bold'; gap?: number } = {},
-    ) => {
-      const size = options.size ?? 11;
-      const gap = options.gap ?? 16;
-
-      doc.setFont('helvetica', options.weight === 'bold' ? 'bold' : 'normal');
-      doc.setFontSize(size);
-      if (options.color) {
-        doc.setTextColor(...options.color);
-      } else {
-        doc.setTextColor(24, 24, 27);
-      }
-
-      const lines = doc.splitTextToSize(text, contentWidth);
-      const lineHeight = size * 1.45;
-      ensureSpace(lines.length * lineHeight + gap);
-      doc.text(lines, margin, y);
-      y += lines.length * lineHeight + gap;
-    };
-
-    const addSection = (title: string, items: string[] | string) => {
-      addWrappedText(title, {
-        size: 10,
-        color: [79, 70, 229],
-        weight: 'bold',
-        gap: 10,
+    try {
+      const doc = new jsPDF({
+        unit: 'pt',
+        format: 'a4',
       });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 48;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
 
-      if (Array.isArray(items)) {
-        if (items.length === 0) {
-          addWrappedText('None recorded.', { size: 11, color: [82, 82, 91] });
+      const ensureSpace = (height = 24) => {
+        if (y + height <= pageHeight - margin) {
           return;
         }
 
-        items.forEach((item) => {
-          addWrappedText(`• ${item}`, { size: 11, color: [39, 39, 42], gap: 10 });
+        doc.addPage();
+        y = margin;
+      };
+
+      const addWrappedText = (
+        text: string,
+        options: { size?: number; color?: [number, number, number]; weight?: 'normal' | 'bold'; gap?: number } = {},
+      ) => {
+        const size = options.size ?? 11;
+        const gap = options.gap ?? 16;
+
+        doc.setFont('helvetica', options.weight === 'bold' ? 'bold' : 'normal');
+        doc.setFontSize(size);
+        if (options.color) {
+          doc.setTextColor(...options.color);
+        } else {
+          doc.setTextColor(24, 24, 27);
+        }
+
+        const lines = doc.splitTextToSize(text, contentWidth);
+        const lineHeight = size * 1.45;
+        ensureSpace(lines.length * lineHeight + gap);
+        doc.text(lines, margin, y);
+        y += lines.length * lineHeight + gap;
+      };
+
+      const addSection = (title: string, items: string[] | string) => {
+        addWrappedText(title, {
+          size: 10,
+          color: [79, 70, 229],
+          weight: 'bold',
+          gap: 10,
         });
-        y += 6;
-        return;
-      }
 
-      addWrappedText(items, { size: 11, color: [39, 39, 42] });
-    };
+        if (Array.isArray(items)) {
+          if (items.length === 0) {
+            addWrappedText('None recorded.', { size: 11, color: [82, 82, 91] });
+            return;
+          }
 
-    addWrappedText('NOOSPHERE SYNTHESIS REPORT', {
-      size: 12,
-      color: [79, 70, 229],
-      weight: 'bold',
-      gap: 12,
-    });
-    addWrappedText(question.text, {
-      size: 22,
-      color: [15, 23, 42],
-      weight: 'bold',
-      gap: 14,
-    });
-    addWrappedText(question.description, {
-      size: 12,
-      color: [71, 85, 105],
-      gap: 18,
-    });
-    addWrappedText(
-      `Generated ${new Date(synthesis.generatedAt).toLocaleString()} • ${synthesis.provider === 'gemini' ? 'Gemini synthesis' : 'Local fallback synthesis'
-      }`,
-      {
-        size: 10,
-        color: [100, 116, 139],
-        gap: 20,
-      },
-    );
-    addSection('Dominant Conclusion', synthesis.dominantConclusion);
-    addSection('Consensus', synthesis.consensusPoints);
-    addSection('Disagreements', synthesis.dissensusPoints);
-    addSection('Minority Views', synthesis.minorityViews);
-    addSection('Summary', synthesis.qualityWeightedSummary);
-    addSection('Generation Notes', synthesis.providerDetail);
-    addSection('Archive CID', synthesis.archiveCid);
+          items.forEach((item) => {
+            addWrappedText(`• ${item}`, { size: 11, color: [39, 39, 42], gap: 10 });
+          });
+          y += 6;
+          return;
+        }
 
-    doc.save(`${question.id}-synthesis-report.pdf`);
+        addWrappedText(items, { size: 11, color: [39, 39, 42] });
+      };
+
+      addWrappedText('NOOSPHERE SYNTHESIS REPORT', {
+        size: 12,
+        color: [79, 70, 229],
+        weight: 'bold',
+        gap: 12,
+      });
+      addWrappedText(question.text, {
+        size: 22,
+        color: [15, 23, 42],
+        weight: 'bold',
+        gap: 14,
+      });
+      addWrappedText(question.description, {
+        size: 12,
+        color: [71, 85, 105],
+        gap: 18,
+      });
+      addWrappedText(
+        `Generated ${new Date(synthesis.generatedAt).toLocaleString()} • ${
+          synthesis.provider === 'gemini' ? 'Gemini synthesis' : 'Local fallback synthesis'
+        }`,
+        {
+          size: 10,
+          color: [100, 116, 139],
+          gap: 20,
+        },
+      );
+      addSection('Dominant Conclusion', synthesis.dominantConclusion);
+      addSection('Consensus', synthesis.consensusPoints);
+      addSection('Disagreements', synthesis.dissensusPoints);
+      addSection('Minority Views', synthesis.minorityViews);
+      addSection('Summary', synthesis.qualityWeightedSummary);
+      addSection('Generation Notes', synthesis.providerDetail);
+      addSection('Archive CID', synthesis.archiveCid);
+
+      doc.save(`${question.id}-synthesis-report.pdf`);
+      setNotice({ tone: 'success', message: 'PDF report downloaded.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to generate the PDF report.',
+      });
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  }
+
+  async function handleResetDemoData() {
+    setIsResettingDemo(true);
+    setNotice({ tone: 'info', message: 'Resetting demo data...' });
+
+    try {
+      await resetDemoData();
+      setNotice({ tone: 'success', message: 'Demo data reset complete.' });
+      startTransition(() => navigate('/'));
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to reset demo data.',
+      });
+    } finally {
+      setIsResettingDemo(false);
+    }
   }
 
   return (
@@ -503,14 +605,46 @@ export default function App() {
               />
             </div>
             <button
-              onClick={resetDemoData}
-              className="rounded-xl border border-slate-800 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-primary hover:text-primary"
+              onClick={() => void handleResetDemoData()}
+              disabled={isResettingDemo}
+              className="rounded-xl border border-slate-800 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Reset Demo Data
+              {isResettingDemo ? 'Resetting...' : 'Reset Demo Data'}
             </button>
           </div>
         </div>
       </header>
+
+      {notice && (
+        <div className="border-b border-slate-800 bg-slate-950/80 px-6 py-3 md:px-12">
+          <div
+            className={`${shellWidthClass} flex items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-sm ${
+              notice.tone === 'error'
+                ? 'border-amber-500/30 bg-amber-500/10 text-amber-100'
+                : notice.tone === 'success'
+                  ? 'border-teal-500/30 bg-teal-500/10 text-teal-100'
+                  : 'border-slate-700 bg-slate-900/70 text-slate-200'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {notice.tone === 'error' ? (
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+              ) : notice.tone === 'success' ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+              ) : (
+                <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />
+              )}
+              <p>{notice.message}</p>
+            </div>
+            <button
+              onClick={() => setNotice(null)}
+              className="text-xs font-bold uppercase tracking-[0.2em] text-inherit/80 transition hover:text-inherit"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1">
         <AnimatePresence mode="wait">
@@ -705,11 +839,19 @@ export default function App() {
                       />
                       <button
                         onClick={() => void handleCreateQuestion()}
-                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110"
+                        disabled={isCreatingQuestion || !questionDraft.text.trim() || !questionDraft.description.trim()}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <Rocket className="h-4 w-4" />
-                        Open Session
+                        {isCreatingQuestion ? (
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Rocket className="h-4 w-4" />
+                        )}
+                        {isCreatingQuestion ? 'Opening Session...' : 'Open Session'}
                       </button>
+                      <p className="text-xs text-slate-500">
+                        Sessions open immediately after creation, so contributors can start submitting reasoning right away.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -745,35 +887,46 @@ export default function App() {
                   </div>
                 </div>
                 <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-                  {visibleQuestions.map((question) => {
-                    const metrics = deriveQuestionMetrics(
-                      question,
-                      state.submissions,
-                      state.syntheses,
-                      state.verifications,
-                    );
+                  {visibleQuestions.length > 0 ? (
+                    visibleQuestions.map((question) => {
+                      const metrics = deriveQuestionMetrics(
+                        question,
+                        state.submissions,
+                        state.syntheses,
+                        state.verifications,
+                      );
 
-                    return (
-                      <QuestionCard
-                        key={question.id}
-                        question={question}
-                        submissionCount={metrics.submissions.length}
-                        verifiedHumans={metrics.verifiedHumans}
-                        avgQuality={metrics.avgQuality}
-                        onOpen={() => {
-                          setSelectedQuestionId(question.id);
-                          setSelectedSubmissionId(metrics.submissions[0]?.id ?? null);
-                          startTransition(() => {
-                            const target =
-                              question.status === 'complete'
-                                ? `/questions/${question.id}/synthesis`
-                                : `/questions/${question.id}`;
-                            navigate(target);
-                          });
-                        }}
-                      />
-                    );
-                  })}
+                      return (
+                        <QuestionCard
+                          key={question.id}
+                          question={question}
+                          submissionCount={metrics.submissions.length}
+                          verifiedHumans={metrics.verifiedHumans}
+                          avgQuality={metrics.avgQuality}
+                          onOpen={() => {
+                            setSelectedQuestionId(question.id);
+                            setSelectedSubmissionId(metrics.submissions[0]?.id ?? null);
+                            startTransition(() => {
+                              const target =
+                                question.status === 'complete'
+                                  ? `/questions/${question.id}/synthesis`
+                                  : `/questions/${question.id}`;
+                              navigate(target);
+                            });
+                          }}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="md:col-span-2 2xl:col-span-3 rounded-3xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
+                      <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                        No Matching Sessions
+                      </p>
+                      <p className="mt-3 text-sm text-slate-400">
+                        Adjust the search or filters, or create a new reasoning session to get started.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </section>
             </motion.div>
@@ -1024,7 +1177,11 @@ export default function App() {
                       disabled={activeMetrics.submissions.length < 2 || isSynthesizing === activeQuestion.id}
                       className="flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <Rocket className="h-4 w-4" />
+                      {isSynthesizing === activeQuestion.id ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Rocket className="h-4 w-4" />
+                      )}
                       {isSynthesizing === activeQuestion.id ? 'Aggregating...' : 'Aggregate Reasoning'}
                     </button>
                     {activeMetrics.synthesis && (
@@ -1107,6 +1264,12 @@ export default function App() {
                             onVerified={handleVerify}
                           />
                         </Suspense>
+                        {isVerifyingIdentity && (
+                          <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                            <LoaderCircle className="h-3.5 w-3.5 animate-spin text-primary" />
+                            Verification is in progress. Keep this page open until it completes.
+                          </div>
+                        )}
                       </div>
 
                       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
@@ -1243,14 +1406,24 @@ export default function App() {
                       <button
                         onClick={() => void handleSubmitReasoning()}
                         disabled={
+                          isSubmittingReasoning ||
                           !submissionForm.conclusion.trim() ||
                           submissionForm.premises.filter((premise) => premise.trim()).length === 0
                         }
                         className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <Rocket className="h-4 w-4" />
-                        Submit to Noosphere
+                        {isSubmittingReasoning ? (
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Rocket className="h-4 w-4" />
+                        )}
+                        {isSubmittingReasoning ? 'Submitting...' : 'Submit to Noosphere'}
                       </button>
+                      {isSubmittingReasoning && (
+                        <p className="text-xs text-slate-500">
+                          Writing your reasoning, scoring it, and refreshing the live session.
+                        </p>
+                      )}
                       <div className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
                         <Cloud className="mt-0.5 h-4 w-4 text-primary" />
                         Active reasoning is uploaded to{' '}
@@ -1533,7 +1706,11 @@ export default function App() {
                         disabled={activeMetrics.submissions.length < 2 || isSynthesizing === activeQuestion.id}
                         className="flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <Rocket className="h-4 w-4" />
+                        {isSynthesizing === activeQuestion.id ? (
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Rocket className="h-4 w-4" />
+                        )}
                         {isSynthesizing === activeQuestion.id ? 'Aggregating...' : 'Aggregate'}
                       </button>
                     </div>
@@ -1656,10 +1833,15 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => handleDownloadSynthesis(activeMetrics.synthesis!, activeQuestion)}
-                    className="flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110"
+                    disabled={isDownloadingReport}
+                    className="flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <Download className="h-4 w-4" />
-                    Download Report
+                    {isDownloadingReport ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {isDownloadingReport ? 'Generating PDF...' : 'Download Report'}
                   </button>
                 </div>
               </div>
