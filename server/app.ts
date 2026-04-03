@@ -315,25 +315,31 @@ function buildHealthPayload() {
 export async function handleRequest(req: NodeRequest, res: ServerResponse) {
   const method = req.method ?? 'GET';
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-  const pathname = url.pathname;
+  const pathname = url.pathname.replace(/\/+$/, '') || '/';
+  const routePath =
+    pathname === '/api'
+      ? '/'
+      : pathname.startsWith('/api/')
+        ? pathname.slice(4) || '/'
+        : pathname;
 
   try {
-    if (method === 'GET' && pathname === '/healthz') {
+    if (method === 'GET' && (pathname === '/healthz' || pathname === '/api/healthz')) {
       sendJson(res, 200, buildHealthPayload());
       return;
     }
 
-    if (method === 'GET' && pathname === '/api/bootstrap') {
+    if (method === 'GET' && (pathname === '/api/bootstrap' || routePath === '/bootstrap')) {
       sendJson(res, 200, await buildBootstrap());
       return;
     }
 
-    if (method === 'POST' && pathname === '/api/world/rp-context') {
+    if (method === 'POST' && (pathname === '/api/world/rp-context' || routePath === '/world/rp-context')) {
       sendJson(res, 200, buildRpContext());
       return;
     }
 
-    if (method === 'POST' && pathname === '/api/world/verify') {
+    if (method === 'POST' && (pathname === '/api/world/verify' || routePath === '/world/verify')) {
       const input = worldVerifySchema.parse(await readJson(req));
       const rpId = env.VITE_WORLD_ID_RP_ID;
 
@@ -371,12 +377,12 @@ export async function handleRequest(req: NodeRequest, res: ServerResponse) {
       return;
     }
 
-    if (method === 'GET' && pathname === '/api/questions') {
+    if (method === 'GET' && (pathname === '/api/questions' || routePath === '/questions')) {
       sendJson(res, 200, await listQuestions());
       return;
     }
 
-    if (method === 'POST' && pathname === '/api/questions') {
+    if (method === 'POST' && (pathname === '/api/questions' || routePath === '/questions')) {
       const input = questionSchema.parse(await readJson(req));
       const question = await createQuestion({
         title: input.title,
@@ -390,7 +396,7 @@ export async function handleRequest(req: NodeRequest, res: ServerResponse) {
       return;
     }
 
-    if (method === 'POST' && pathname === '/api/verifications') {
+    if (method === 'POST' && (pathname === '/api/verifications' || routePath === '/verifications')) {
       const input = verificationSchema.parse(await readJson(req));
       const question = await getQuestion(input.questionId);
 
@@ -403,7 +409,8 @@ export async function handleRequest(req: NodeRequest, res: ServerResponse) {
       return;
     }
 
-    const questionSubmissionsMatch = pathname.match(/^\/api\/questions\/([^/]+)\/submissions$/);
+    const questionSubmissionsMatch = (pathname.match(/^\/api\/questions\/([^/]+)\/submissions$/) ??
+      routePath.match(/^\/questions\/([^/]+)\/submissions$/));
     if (method === 'GET' && questionSubmissionsMatch) {
       const questionId = decodeURIComponent(questionSubmissionsMatch[1] ?? '');
       const session = await listQuestionSession(questionId);
@@ -417,7 +424,8 @@ export async function handleRequest(req: NodeRequest, res: ServerResponse) {
       return;
     }
 
-    const questionReasoningMatch = pathname.match(/^\/api\/questions\/([^/]+)\/reasoning$/);
+    const questionReasoningMatch = (pathname.match(/^\/api\/questions\/([^/]+)\/reasoning$/) ??
+      routePath.match(/^\/questions\/([^/]+)\/reasoning$/));
     if (method === 'POST' && questionReasoningMatch) {
       const input = submissionSchema.parse(await readJson(req));
       const questionId = decodeURIComponent(questionReasoningMatch[1] ?? '');
@@ -425,7 +433,7 @@ export async function handleRequest(req: NodeRequest, res: ServerResponse) {
       return;
     }
 
-    if (method === 'POST' && pathname === '/api/reasoning/submit') {
+    if (method === 'POST' && (pathname === '/api/reasoning/submit' || routePath === '/reasoning/submit')) {
       const input = submissionSchema.parse(await readJson(req));
 
       if (!input.questionId) {
@@ -437,7 +445,8 @@ export async function handleRequest(req: NodeRequest, res: ServerResponse) {
       return;
     }
 
-    const questionAggregateMatch = pathname.match(/^\/api\/questions\/([^/]+)\/(aggregate|synthesize)$/);
+    const questionAggregateMatch = (pathname.match(/^\/api\/questions\/([^/]+)\/(aggregate|synthesize)$/) ??
+      routePath.match(/^\/questions\/([^/]+)\/(aggregate|synthesize)$/));
     if (method === 'POST' && questionAggregateMatch) {
       const questionId = decodeURIComponent(questionAggregateMatch[1] ?? '');
       const question = await getQuestion(questionId);
@@ -451,12 +460,12 @@ export async function handleRequest(req: NodeRequest, res: ServerResponse) {
       return;
     }
 
-    if (method === 'GET' && pathname === '/api/system/status') {
+    if (method === 'GET' && (pathname === '/api/system/status' || routePath === '/system/status')) {
       sendJson(res, 200, buildSystemStatus());
       return;
     }
 
-    if (method === 'POST' && pathname === '/api/admin/reset') {
+    if (method === 'POST' && (pathname === '/api/admin/reset' || routePath === '/admin/reset')) {
       await resetDatabase();
       sendJson(res, 200, await buildBootstrap());
       return;
