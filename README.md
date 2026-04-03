@@ -1,6 +1,6 @@
 # Noosphere
 
-Noosphere is a collective reasoning platform with a React frontend and an Express + SQLite backend. It lets users:
+Noosphere is a collective reasoning platform with a React frontend and a serverless API layer backed by Postgres. It lets users:
 
 - create deliberation questions with deadlines
 - verify contributors per question
@@ -14,7 +14,7 @@ Noosphere is a collective reasoning platform with a React frontend and an Expres
 ## Stack
 
 - React 19 + Vite
-- Express 5 + SQLite (`better-sqlite3`)
+- Node API routes + hosted Postgres
 - Tailwind CSS v4
 - React Flow for the reasoning graph
 - World ID React SDK for human verification
@@ -50,29 +50,13 @@ If the app looks blank or API-backed features are failing locally, make sure the
 
 ## Production deployment
 
-Noosphere is ready to deploy as a single backend service with a persistent disk:
-
-1. Build the frontend:
-   `npm run build`
-2. Start the production server:
-   `npm start`
-3. Mount a persistent volume and point `DATABASE_PATH` at it.
-4. Start the server after the build completes.
+Noosphere is now set up to deploy on Vercel with a hosted Postgres database.
 
 Recommended production shape:
 
-- one backend instance only
-- one persistent disk
-- SQLite file stored on that disk
-- built frontend served by the same Express server
-
-Recommended database env:
-
-```bash
-DATABASE_PATH=/var/lib/noosphere/noosphere.db
-```
-
-Use a host with persistent storage such as Render, Fly.io, Railway with volumes, or a VPS. Avoid serverless platforms for the current SQLite setup.
+- Vercel for frontend and API routes
+- Supabase Postgres for data
+- provider secrets in Vercel environment variables
 
 Health check endpoint:
 
@@ -81,16 +65,6 @@ GET /healthz
 ```
 
 Detailed deployment steps are in [DEPLOYMENT.md](/Users/sam/Desktop/Projects/NooSphere/DEPLOYMENT.md).
-
-### Render quick start
-
-If you want to use Render, this repo now includes [render.yaml](/Users/sam/Desktop/Projects/NooSphere/render.yaml).
-
-1. Push the repo to GitHub.
-2. Create a new Blueprint in Render from the repo.
-3. Render will create one web service with a persistent disk mounted at `/var/data`.
-4. Add the missing secret environment variables in the Render dashboard.
-5. Deploy.
 
 ## Environment
 
@@ -105,7 +79,7 @@ Backend and AI envs:
 
 ```bash
 PORT=8787
-DATABASE_PATH=data/noosphere.db
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 NOOSPHERE_ENABLE_DEMO_SEED=false
 RP_SIGNING_KEY=sk_xxx
 GEMINI_API_KEY=
@@ -132,8 +106,9 @@ The app now fetches a fresh `rp_context` from the backend on demand, so you do n
 Notes:
 
 - Public/browser envs use `VITE_*`. Server secrets do not. Do not put Gemini, Impulse, or signing secrets behind `VITE_*`, because that exposes them to the browser.
+- For Supabase on Vercel, use the transaction pooler for `DATABASE_URL`. For local long-running backend development, use the direct connection string.
 - Storacha is used for hot storage and archive publication; archival reaches Filecoin through the Storacha/Filecoin pipeline when the delegation supports it.
-- The backend owns question, submission, and synthesis persistence in the path defined by `DATABASE_PATH` or `data/noosphere.db` by default.
+- The backend now expects Postgres through `DATABASE_URL` or `POSTGRES_URL`.
 - Predicted quality scores weight synthesis ordering and scale node size in the reasoning graph.
 - API request/response payloads are logged in the browser console for tracing app activity.
 - Official World ID verification still requires a signed RP context.

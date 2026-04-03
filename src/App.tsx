@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Box,
   CheckCircle2,
   Cloud,
   Compass,
@@ -583,7 +582,7 @@ export default function App() {
             onClick={() => startTransition(() => navigate('/'))}
             className="flex items-center gap-3 text-primary"
           >
-            <Box className="h-8 w-8" />
+            <img src="/noosphere-logo.svg" alt="Noosphere" className="h-9 w-9 rounded-2xl" />
             <div className="text-left">
               <p className="text-lg font-bold tracking-tight text-slate-100">Noosphere</p>
               {/* <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
@@ -1748,7 +1747,7 @@ export default function App() {
       <footer className="mt-auto border-t border-slate-800 bg-background-dark px-6 py-12">
         <div className={`${shellWidthClass} flex flex-col items-center justify-between gap-8 md:flex-row`}>
           <div className="flex items-center gap-3 text-primary opacity-70 grayscale transition-all hover:grayscale-0">
-            <Box className="h-8 w-8" />
+            <img src="/noosphere-logo.svg" alt="Noosphere" className="h-9 w-9 rounded-2xl" />
             <h2 className="text-lg font-bold text-slate-100">Noosphere</h2>
           </div>
           <div className="flex flex-wrap justify-center gap-8 text-sm text-slate-500">

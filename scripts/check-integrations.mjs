@@ -49,6 +49,24 @@ async function checkWorldId() {
   }
 }
 
+async function checkDatabase() {
+  const connectionString = getEnv('DATABASE_URL') || getEnv('POSTGRES_URL');
+
+  if (!connectionString) {
+    return {
+      ok: false,
+      label: 'Database',
+      detail: 'Missing DATABASE_URL or POSTGRES_URL.',
+    };
+  }
+
+  return {
+    ok: true,
+    label: 'Database',
+    detail: 'Postgres connection string is configured.',
+  };
+}
+
 async function checkStoracha() {
   const proof = getEnv('VITE_STORACHA_PROOF');
   const spaceDid = getEnv('VITE_STORACHA_SPACE_DID');
@@ -152,6 +170,7 @@ async function checkImpulse() {
 }
 
 const results = await Promise.all([
+  checkDatabase(),
   checkWorldId(),
   checkStoracha(),
   checkGemini(),
