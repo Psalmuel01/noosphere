@@ -1,9 +1,18 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { handleRequest } from '../server/app.js';
+import { env } from '../lib/config.js';
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
-    await handleRequest(req, res);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(
+      JSON.stringify({
+        ok: true,
+        service: 'noosphere',
+        nodeEnv: env.NODE_ENV ?? 'development',
+        databaseConfigured: Boolean(env.DATABASE_URL ?? env.POSTGRES_URL),
+      }),
+    );
   } catch (error) {
     console.error('Health API failed.', error);
     res.statusCode = 500;
