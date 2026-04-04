@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { env } from '../config';
-import { QuestionRecord, SubmissionRecord } from '../models';
+import { env } from '../config.js';
+import { QuestionRecord, SubmissionRecord } from '../models.js';
 
 const synthesisSchema = z.object({
   consensusPoints: z.array(z.string()).default([]),

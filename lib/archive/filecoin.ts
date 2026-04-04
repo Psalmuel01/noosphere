@@ -1,6 +1,6 @@
-import { env } from '../config';
-import { ProviderStatus } from '../models';
-import { uploadArchiveArtifact } from '../storage/storacha';
+import { env } from '../config.js';
+import { ProviderStatus } from '../models.js';
+import { uploadArchiveArtifact } from '../storage/storacha.js';
 
 export function getFilecoinStatus(): ProviderStatus {
   if (!env.VITE_STORACHA_PROOF || !env.VITE_STORACHA_SPACE_DID) {

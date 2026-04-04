@@ -1,0 +1,25 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="32" fill="#020617"/>
+  <rect x="24" y="24" width="80" height="80" rx="24" fill="url(#paint0_linear)"/>
+  <path
+    d="M43 49.3333C43 45.8355 45.8355 43 49.3333 43H78.6667C82.1645 43 85 45.8355 85 49.3333V78.6667C85 82.1645 82.1645 85 78.6667 85H49.3333C45.8355 85 43 82.1645 43 78.6667V49.3333Z"
+    fill="#020617"
+    fill-opacity="0.96"
+  />
+  <path
+    d="M54.5 42.5L64 36L73.5 42.5L83 49V60V70L73.5 76.5L64 83L54.5 76.5L45 70V60V49L54.5 42.5Z"
+    stroke="#A5B4FC"
+    stroke-width="5"
+    stroke-linejoin="round"
+  />
+  <path d="M45 49L64 60L83 49" stroke="#818CF8" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M64 60V83" stroke="#818CF8" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="64" cy="60" r="6" fill="#C7D2FE"/>
+  <defs>
+    <linearGradient id="paint0_linear" x1="24" y1="20" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#312E81"/>
+      <stop offset="0.52" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+</svg>

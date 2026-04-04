@@ -1,5 +1,5 @@
-import { env } from '../config';
-import { PredictionFeatures } from '../models';
+import { env } from '../config.js';
+import { PredictionFeatures } from '../models.js';
 
 export interface ImpulsePrediction {
   persuasionScore: number;

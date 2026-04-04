@@ -1,4 +1,4 @@
-import { NoosphereState } from '../types';
+import { NoosphereState } from '../types.js';
 
 export const seedState: NoosphereState = {
   questions: [
