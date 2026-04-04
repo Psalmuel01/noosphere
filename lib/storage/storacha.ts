@@ -3,9 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
-import { createIpfsCid } from '../../src/lib/cid';
-import { env } from '../config';
-import { ProviderStatus, StorageNetwork } from '../models';
+import { createIpfsCid } from '../../src/lib/cid.js';
+import { env } from '../config.js';
+import { ProviderStatus, StorageNetwork } from '../models.js';
 
 const execFile = promisify(execFileCallback);
 const uploadScriptPath = path.resolve(process.cwd(), 'scripts/storacha-upload.mjs');

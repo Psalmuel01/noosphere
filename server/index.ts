@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
-import { env } from '../lib/config';
-import { handleRequest } from './app';
+import { env } from '../lib/config.js';
+import { handleRequest } from './app.js';
 
 createServer((req, res) => {
   void handleRequest(req, res);

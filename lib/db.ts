@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { env } from './config';
+import { env } from './config.js';
 import {
   QuestionInput,
   QuestionRecord,
@@ -7,8 +7,8 @@ import {
   SynthesisRecord,
   VerificationInput,
   VerificationRecord,
-} from './models';
-import { seedState } from '../src/data/seed';
+} from './models.js';
+import { seedState } from '../src/data/seed.js';
 
 type SqlClient = ReturnType<typeof postgres>;
 

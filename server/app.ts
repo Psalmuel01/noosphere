@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
 import { signRequest } from '@worldcoin/idkit/signing';
-import { env } from '../lib/config';
+import { env } from '../lib/config.js';
 import {
   createQuestion,
   getQuestion,
@@ -15,13 +15,13 @@ import {
   resetDatabase,
   upsertSynthesis,
   upsertVerification,
-} from '../lib/db';
-import { buildPredictionFeatures, getImpulseStatus, predictPersuasion } from '../lib/ai/impulse';
-import { getGeminiStatus, synthesizeReasoning } from '../lib/ai/synthesis';
-import { archiveSessionToFilecoin, getFilecoinStatus } from '../lib/archive/filecoin';
-import { getStorachaStatus, uploadReasoningToStoracha } from '../lib/storage/storacha';
-import { BootstrapPayload, QuestionRecord, SubmissionRecord } from '../lib/models';
-import { extractKeywords, keywordSimilarity } from '../src/lib/scoring';
+} from '../lib/db.js';
+import { buildPredictionFeatures, getImpulseStatus, predictPersuasion } from '../lib/ai/impulse.js';
+import { getGeminiStatus, synthesizeReasoning } from '../lib/ai/synthesis.js';
+import { archiveSessionToFilecoin, getFilecoinStatus } from '../lib/archive/filecoin.js';
+import { getStorachaStatus, uploadReasoningToStoracha } from '../lib/storage/storacha.js';
+import { BootstrapPayload, QuestionRecord, SubmissionRecord } from '../lib/models.js';
+import { extractKeywords, keywordSimilarity } from '../src/lib/scoring.js';
 
 type NodeRequest = IncomingMessage & { body?: unknown };
 
