@@ -20,7 +20,7 @@ async function localFallbackUpload(payload: unknown) {
   const cid = await createIpfsCid(payload);
   return {
     cid,
-    gatewayUrl: `ipfs://${cid}`,
+    gatewayUrl: gatewayUrl(cid),
     network: 'local-ipfs' as const,
   };
 }
